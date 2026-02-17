@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <link rel="icon" type="image/png" href="favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Presensi - SMKN 2 Tegalsari</title>
@@ -90,8 +89,13 @@
             </div>
             
             <div class="text-center space-y-4">
-                <div class="w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-[2rem] flex items-center justify-center text-white mx-auto shadow-2xl shadow-indigo-200/50 animate-float">
-                    <i data-lucide="shield-check" class="w-10 h-10"></i>
+                <!-- LOGO PNG TANPA BACKGROUND PUTIH UNTUK LOGIN -->
+                <div class="w-32 h-32 flex items-center justify-center mx-auto animate-float">
+                    <img src="https://lh3.googleusercontent.com/d/15zyF01OHtEgTl8p6bvEkz7xw30ByE2en" 
+                         alt="Logo Sekolah" 
+                         id="appLogo"
+                         class="w-full h-full object-contain drop-shadow-2xl"
+                         onerror="this.src='https://ui-avatars.com/api/?name=SMK&background=6366f1&color=fff'">
                 </div>
                 <div class="space-y-1">
                     <h1 class="text-3xl font-black gradient-text tracking-tighter uppercase">Smart Presensi</h1>
@@ -136,6 +140,7 @@
             <!-- Navbar Header -->
             <div class="flex items-center justify-between glass-card p-4 rounded-[2rem] sticky top-4 z-50">
                 <div class="flex items-center gap-3">
+                    <!-- Icon/Avatar (Dibalikkan ke desain awal sesuai request) -->
                     <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg">
                         <i data-lucide="user-check" class="w-5 h-5"></i>
                     </div>
@@ -228,7 +233,6 @@
     </div>
 
     <script>
-        // URL WEB APP GOOGLE SCRIPT ANDA
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz2hfj4CVdHLrS9rorqWJp-tW_ItqWxBAlctMPTCTpM8PiBmgwGa-VrpmHMjLM5TTYa/exec";
 
         let schoolConfig = { 
@@ -384,7 +388,6 @@
             absenBtn.disabled = true;
             absenBtn.innerHTML = `<span class="animate-pulse">MENGIRIM...</span>`;
 
-            // Objek data presensi
             const postData = {
                 action: 'presensi',
                 nama: currentUser.nama,
@@ -397,14 +400,12 @@
             };
 
             try {
-                // Gunakan POST dengan mode no-cors karena batasan iFrame/CORS Apps Script
                 await fetch(GOOGLE_SCRIPT_URL, { 
                     method: 'POST', 
                     body: JSON.stringify(postData),
                     mode: 'no-cors'
                 });
 
-                // Karena no-cors tidak bisa membaca feedback, kita asumsikan sukses setelah jeda singkat
                 setTimeout(() => {
                     showToast("Presensi Berhasil Dikirim!", "emerald");
                     addLog({
@@ -452,5 +453,4 @@
         }
     </script>
 </body>
-
 </html>
