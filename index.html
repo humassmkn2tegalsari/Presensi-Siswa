@@ -23,6 +23,7 @@
             background: radial-gradient(circle at top left, #f0f4ff 0%, #ffffff 40%, #fdf2f8 100%);
             background-attachment: fixed;
             color: #1e293b;
+            overflow-x: hidden;
         }
 
         .glass-card {
@@ -68,7 +69,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen pb-10">
+<body class="min-h-screen">
 
     <!-- Ornamen Latar Belakang -->
     <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[100px] -z-10 animate-pulse"></div>
@@ -90,7 +91,6 @@
             </div>
             
             <div class="text-center space-y-4">
-                <!-- LOGO PNG TANPA BACKGROUND PUTIH UNTUK LOGIN -->
                 <div class="w-32 h-32 flex items-center justify-center mx-auto animate-float">
                     <img src="https://lh3.googleusercontent.com/d/15zyF01OHtEgTl8p6bvEkz7xw30ByE2en" 
                          alt="Logo Sekolah" 
@@ -99,7 +99,7 @@
                          onerror="this.src='https://ui-avatars.com/api/?name=SMK&background=6366f1&color=fff'">
                 </div>
                 <div class="space-y-1">
-                    <h1 class="text-3xl font-black gradient-text tracking-tighter propercaseh">E-Presensi Skarida</h1>
+                    <h1 class="text-3xl font-black gradient-text tracking-tighter">E-Presensi Skarida</h1>
                     <p class="text-slate-400 text-[11px] font-bold tracking-widest uppercase">Absensi Kehadiran Siswa</p>
                 </div>
             </div>
@@ -111,6 +111,7 @@
                         <input type="text" id="loginUser" class="w-full pl-14 pr-6 py-5 bg-white/30 border border-white/20 rounded-2xl text-sm font-bold focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none" placeholder="Username / NISN">
                     </div>
                 </div>
+
                 <div class="space-y-2">
                     <div class="relative group">
                         <i data-lucide="key-round" class="absolute left-5 top-5 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
@@ -120,6 +121,7 @@
                         </button>
                     </div>
                 </div>
+
                 <div class="space-y-4">
                     <button id="btnLogin" onclick="handleLogin()" class="tap-scale w-full py-5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-[2rem] font-black text-sm tracking-[0.2em] shadow-xl shadow-indigo-500/20 uppercase transition-all">
                         Masuk
@@ -141,7 +143,6 @@
             <!-- Navbar Header -->
             <div class="flex items-center justify-between glass-card p-4 rounded-[2rem] sticky top-4 z-50">
                 <div class="flex items-center gap-3">
-                    <!-- Icon/Avatar (Dibalikkan ke desain awal sesuai request) -->
                     <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg">
                         <i data-lucide="user-check" class="w-5 h-5"></i>
                     </div>
@@ -218,7 +219,7 @@
                 </div>
             </div>
 
-            <div class="space-y-4">
+            <div class="space-y-4 pb-12">
                 <div class="flex items-center justify-between px-4">
                     <h3 class="font-black text-slate-800 text-xs uppercase tracking-[0.2em]">Aktivitas Hari Ini</h3>
                     <span id="logCount" class="text-[10px] font-black text-indigo-500 bg-indigo-500/10 px-3 py-1 rounded-full uppercase">0 Sesi</span>
@@ -234,88 +235,91 @@
     </div>
 
     <script>
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz2hfj4CVdHLrS9rorqWJp-tW_ItqWxBAlctMPTCTpM8PiBmgwGa-VrpmHMjLM5TTYa/exec";
-
-        let schoolConfig = { 
-            lat: -7.837572, 
-            lng: 113.935195, 
-            radius: 100,
-            start_time: "06:00",
-            end_time: "07:00" 
-        };
-        
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxk3QxaBOMJO_j7agCNDs8nQha26X2HS_2EByx2_zMR8WEr-y7y1EqXOHXw-qs-a8ex/exec";
+        let schoolConfig = { lat: -7.837572, lng: 113.935195, radius: 100, start_time: "06:00", end_time: "17:00" };
         let currentUser = null;
-        let watchId = null;
-        let currentCoords = null;
         let currentDistance = null;
+        let currentCoords = null;
         let isSubmitting = false;
 
         lucide.createIcons();
 
         function togglePasswordVisibility() {
             const passInput = document.getElementById('loginPass');
-            const toggleIcon = document.getElementById('togglePassIcon');
-            if (passInput.type === 'password') {
-                passInput.type = 'text';
-                toggleIcon.setAttribute('data-lucide', 'eye-off');
+            const icon = document.getElementById('togglePassIcon');
+            if (passInput.type === "password") {
+                passInput.type = "text";
+                icon.setAttribute('data-lucide', 'eye-off');
             } else {
-                passInput.type = 'password';
-                toggleIcon.setAttribute('data-lucide', 'eye');
+                passInput.type = "password";
+                icon.setAttribute('data-lucide', 'eye');
             }
             lucide.createIcons();
         }
-
-        async function fetchConfig() {
-            try {
-                const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getConfig`);
-                const data = await res.json();
-                if (data.status === "success") {
-                    schoolConfig = { ...schoolConfig, ...data.config };
-                }
-            } catch (e) { console.error("Config load failed"); }
-            document.getElementById('displayRadius').innerText = `Radius ${schoolConfig.radius}M`;
-            document.getElementById('sessionInfo').innerText = `Sesi Absen: ${schoolConfig.start_time} - ${schoolConfig.end_time} WIB`;
-        }
-
-        fetchConfig();
 
         function updateRealtimeClock() {
             const now = new Date();
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             document.getElementById('realtimeDayDate').innerText = now.toLocaleDateString('id-ID', options);
-            const timeString = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\./g, ':');
-            document.getElementById('realtimeClock').innerText = timeString;
+            document.getElementById('realtimeClock').innerText = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\./g, ':');
         }
-
         setInterval(updateRealtimeClock, 1000);
-        updateRealtimeClock();
 
         async function handleLogin() {
             const user = document.getElementById('loginUser').value.trim();
             const pass = document.getElementById('loginPass').value.trim();
             const btn = document.getElementById('btnLogin');
-            if (!user || !pass) { showToast("Data tidak lengkap!", "rose"); return; }
+
+            if (!user || !pass) return showToast("Isi semua data!", "rose");
+
             btn.disabled = true;
-            btn.innerHTML = `<span class="animate-pulse">Mengautentikasi...</span>`;
+            btn.innerHTML = `<span class="animate-pulse">Memverifikasi...</span>`;
+
             try {
                 const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=login&user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`);
                 const result = await response.json();
+
                 if (result.status === "success") {
                     currentUser = result.data;
-                    showToast("Selamat Datang!", "emerald");
+                    if (currentUser.latitude) schoolConfig.lat = parseFloat(currentUser.latitude);
+                    if (currentUser.longitude) schoolConfig.lng = parseFloat(currentUser.longitude);
+                    if (currentUser.radius) schoolConfig.radius = parseInt(currentUser.radius);
+                    if (currentUser.start_time) schoolConfig.start_time = currentUser.start_time;
+                    if (currentUser.end_time) schoolConfig.end_time = currentUser.end_time;
+
                     document.getElementById('loginPage').classList.add('hidden');
                     document.getElementById('presensiPage').classList.remove('hidden');
                     document.getElementById('displayNama').innerText = currentUser.nama;
                     document.getElementById('displayInfo').innerText = `${currentUser.kelas} • ${currentUser.jurusan}`;
+                    document.getElementById('displayRadius').innerText = `Radius ${schoolConfig.radius}M`;
+                    document.getElementById('sessionInfo').innerText = `Sesi Aktif: ${schoolConfig.start_time} - ${schoolConfig.end_time} WIB`;
+                    
+                    showToast("Login Berhasil!", "emerald");
+                    await fetchUserHistory(currentUser.nama);
                     startTracking();
-                } else { showToast("Akses Ditolak!", "rose"); }
-            } catch (e) { showToast("Gangguan Server!", "rose"); } finally {
+                } else {
+                    showToast(result.message || "Gagal Login!", "rose");
+                }
+            } catch (e) {
+                showToast("Kesalahan Jaringan!", "rose");
+            } finally {
                 btn.disabled = false;
                 btn.innerText = "Masuk";
             }
         }
 
-        function handleLogout() { location.reload(); }
+        async function fetchUserHistory(nama) {
+            const container = document.getElementById('logContainer');
+            const today = new Date().toLocaleDateString('id-ID');
+            try {
+                const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getHistory&nama=${encodeURIComponent(nama)}&tanggal=${encodeURIComponent(today)}`);
+                const result = await res.json();
+                if (result.status === "success" && result.data.length > 0) {
+                    container.innerHTML = "";
+                    result.data.forEach(item => addLogToUI({ waktu: item.waktu, jarak: item.jarak }, false));
+                }
+            } catch (e) { console.error(e); }
+        }
 
         function getDistance(lat1, lon1, lat2, lon2) {
             const R = 6371e3;
@@ -325,114 +329,126 @@
         }
 
         function updateUI(position) {
-            const { latitude, longitude } = position.coords;
+            const { latitude, longitude, accuracy } = position.coords;
             currentCoords = { lat: latitude, lng: longitude };
             currentDistance = getDistance(latitude, longitude, schoolConfig.lat, schoolConfig.lng);
+            
             document.getElementById('loadingState').classList.add('hidden');
             document.getElementById('errorState').classList.add('hidden');
             document.getElementById('mainContent').classList.remove('hidden');
-            const distanceVal = Math.round(currentDistance);
-            const isInRange = currentDistance <= schoolConfig.radius;
-            document.getElementById('distanceValue').textContent = distanceVal;
-            const rangeVisual = document.getElementById('rangeVisual');
-            const distanceCircle = document.getElementById('distanceCircle');
-            const statusBadge = document.getElementById('statusBadge');
-            const statusLabel = document.getElementById('statusLabel');
-            const absenBtn = document.getElementById('absenBtn');
+            
+            const dist = Math.round(currentDistance);
+            const isIn = currentDistance <= schoolConfig.radius;
+            
+            document.getElementById('distanceValue').textContent = dist;
+            
+            const visual = document.getElementById('rangeVisual');
+            const circle = document.getElementById('distanceCircle');
+            const badge = document.getElementById('statusBadge');
+            const btn = document.getElementById('absenBtn');
+            const ping = document.getElementById('pingEffect');
+            const label = document.getElementById('statusLabel');
 
-            if (isInRange) {
-                rangeVisual.className = "relative w-52 h-52 flex items-center justify-center rounded-full bg-emerald-500/10 transition-all duration-700 border-4 border-emerald-500/20 shadow-xl";
-                distanceCircle.className = "w-40 h-40 rounded-full flex flex-col items-center justify-center transition-all duration-500 bg-emerald-500 text-white shadow-xl shadow-emerald-500/30";
-                statusBadge.className = "px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] bg-emerald-500 text-white shadow-lg shadow-emerald-500/20";
-                statusBadge.innerText = "LOKASI AMAN";
-                statusLabel.innerText = "Anda berada di dalam zona kehadiran sekolah.";
+            if (isIn) {
+                visual.className = "relative w-52 h-52 flex items-center justify-center rounded-full bg-emerald-500/10 border-4 border-emerald-500/20 shadow-2xl shadow-emerald-500/10";
+                circle.className = "w-40 h-40 rounded-full flex flex-col items-center justify-center bg-emerald-500 text-white shadow-xl shadow-emerald-500/30 transition-all duration-500";
+                badge.className = "px-6 py-2 rounded-full text-[10px] font-black uppercase bg-emerald-500 text-white shadow-lg shadow-emerald-500/20";
+                badge.innerText = "LOKASI VALID";
+                ping.classList.remove('hidden');
+                label.innerHTML = "Anda berada di dalam area presensi.<br><span class='text-emerald-500'>Silahkan tekan tombol di bawah.</span>";
+                
                 if (!isSubmitting) {
-                    absenBtn.disabled = false;
-                    absenBtn.className = "tap-scale w-full py-6 rounded-[2rem] font-black text-sm tracking-[0.3em] transition-all shadow-2xl active:scale-95 bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-500/20 uppercase";
+                    btn.disabled = false;
+                    btn.className = "tap-scale w-full py-6 rounded-[2rem] font-black text-sm tracking-[0.3em] bg-indigo-600 text-white shadow-2xl shadow-indigo-500/20 border-0 uppercase";
                 }
             } else {
-                rangeVisual.className = "relative w-52 h-52 flex items-center justify-center rounded-full bg-slate-500/5 transition-all duration-700 border-4 border-white/5 shadow-inner";
-                distanceCircle.className = "w-40 h-40 rounded-full flex flex-col items-center justify-center transition-all duration-500 bg-slate-200 text-slate-400 shadow-md";
-                statusBadge.className = "px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] bg-slate-200 text-slate-500";
-                statusBadge.innerText = "DILUAR JANGKAUAN";
-                statusLabel.innerText = `Anda berada ${distanceVal - schoolConfig.radius}m dari zona aman.`;
-                absenBtn.disabled = true;
-                absenBtn.className = "w-full py-6 rounded-[2rem] font-black text-sm tracking-[0.3em] transition-all bg-slate-500/10 text-slate-400 border border-slate-500/10 uppercase cursor-not-allowed";
+                visual.className = "relative w-52 h-52 flex items-center justify-center rounded-full bg-slate-500/5 border-4 border-white/10";
+                circle.className = "w-40 h-40 rounded-full flex flex-col items-center justify-center bg-slate-200 text-slate-400";
+                badge.className = "px-6 py-2 rounded-full text-[10px] font-black uppercase bg-slate-200 text-slate-500";
+                badge.innerText = "DI LUAR RADIUS";
+                ping.classList.add('hidden');
+                label.innerHTML = "Dekati area sekolah untuk presensi.<br><span class='text-rose-500'>Akurasi GPS: " + Math.round(accuracy) + "m</span>";
+                
+                btn.disabled = true;
+                btn.className = "w-full py-6 rounded-[2rem] font-black text-sm tracking-[0.3em] bg-slate-500/10 text-slate-400 border border-slate-500/10 uppercase cursor-not-allowed";
             }
-            lucide.createIcons();
-        }
-
-        function handleError(error) {
-            document.getElementById('loadingState').classList.add('hidden');
-            document.getElementById('mainContent').classList.add('hidden');
-            document.getElementById('errorState').classList.remove('hidden');
-            document.getElementById('errorMsg').textContent = "Akses GPS diperlukan untuk verifikasi lokasi.";
         }
 
         function startTracking() {
-            if (!navigator.geolocation) return;
-            watchId = navigator.geolocation.watchPosition(updateUI, handleError, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+            document.getElementById('errorState').classList.add('hidden');
+            document.getElementById('loadingState').classList.remove('hidden');
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(updateUI, (err) => {
+                    document.getElementById('loadingState').classList.add('hidden');
+                    document.getElementById('errorState').classList.remove('hidden');
+                    document.getElementById('errorMsg').innerText = "Izin lokasi ditolak atau GPS tidak aktif. Silahkan aktifkan lokasi.";
+                }, { enableHighAccuracy: true, timeout: 10000 });
+            } else {
+                showToast("Browser tidak mendukung GPS", "rose");
+            }
         }
 
         async function handleAbsen() {
             const now = new Date();
-            const currentTimeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+            const timeNow = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
             
-            if (currentTimeStr < schoolConfig.start_time || currentTimeStr > schoolConfig.end_time) {
-                showToast(`Sesi absen: ${schoolConfig.start_time} - ${schoolConfig.end_time} WIB!`, "rose");
-                return;
+            if (timeNow < schoolConfig.start_time || timeNow > schoolConfig.end_time) {
+                return showToast(`Di luar jam: ${schoolConfig.start_time}-${schoolConfig.end_time}`, "rose");
             }
-
-            if (currentDistance > schoolConfig.radius || isSubmitting || !currentUser) return;
-            const absenBtn = document.getElementById('absenBtn');
+            
+            if (currentDistance > schoolConfig.radius || isSubmitting) return;
+            
             isSubmitting = true;
-            absenBtn.disabled = true;
-            absenBtn.innerHTML = `<span class="animate-pulse">MENGIRIM...</span>`;
+            const btn = document.getElementById('absenBtn');
+            btn.disabled = true;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<span class="animate-pulse">MENGIRIM...</span>`;
 
-            const postData = {
-                action: 'presensi',
-                nama: currentUser.nama,
-                kelas: currentUser.kelas,
-                jurusan: currentUser.jurusan,
+            const data = {
+                nama: currentUser.nama, kelas: currentUser.kelas, jurusan: currentUser.jurusan,
                 waktu: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-                tanggal: now.toLocaleDateString('id-ID'),
-                koordinat: `${currentCoords.lat}, ${currentCoords.lng}`,
+                tanggal: now.toLocaleDateString('id-ID'), koordinat: `${currentCoords.lat}, ${currentCoords.lng}`,
                 jarak: Math.round(currentDistance) + "m"
             };
 
             try {
-                await fetch(GOOGLE_SCRIPT_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify(postData),
-                    mode: 'no-cors'
-                });
-
+                await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify(data), mode: 'no-cors' });
                 setTimeout(() => {
-                    showToast("Presensi Berhasil Dikirim!", "emerald");
-                    addLog({
-                        waktu: postData.waktu,
-                        jarak: postData.jarak
-                    });
+                    showToast("Presensi Berhasil!", "emerald");
+                    addLogToUI(data, true);
                     isSubmitting = false;
-                    absenBtn.innerText = "Konfirmasi Hadir";
-                    updateUI({ coords: currentCoords });
-                }, 1500);
-
-            } catch (error) { 
-                showToast("Gagal mengirim data!", "rose"); 
+                    btn.innerHTML = originalText;
+                }, 1000);
+            } catch (e) {
+                showToast("Gagal mengirim data!", "rose");
                 isSubmitting = false;
-                absenBtn.innerText = "Konfirmasi Hadir";
+                btn.innerHTML = originalText;
             }
         }
 
-        function addLog(log) {
+        function addLogToUI(log, prepend = true) {
             const container = document.getElementById('logContainer');
-            const empty = document.getElementById('logEmpty');
-            if (empty) empty.remove();
+            if (document.getElementById('logEmpty')) document.getElementById('logEmpty').remove();
+            
             const div = document.createElement('div');
-            div.className = "glass-card p-5 rounded-[2rem] flex items-center justify-between animate-in group relative overflow-hidden";
-            div.innerHTML = `<div class="absolute left-0 top-0 w-1.5 h-full bg-emerald-500"></div><div class="flex items-center gap-4"><div class="w-12 h-12 bg-emerald-500/10 text-emerald-600 rounded-2xl flex items-center justify-center"><i data-lucide="check-circle-2" class="w-6 h-6"></i></div><div><p class="text-sm font-black text-slate-700 leading-none mb-1">Presensi Berhasil</p><p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${log.waktu} • TERVERIFIKASI</p></div></div><div class="text-right"><p class="text-[9px] font-black text-emerald-600 bg-emerald-500/10 px-3 py-1 rounded-full uppercase">${log.jarak}</p></div>`;
-            container.prepend(div);
+            div.className = "glass-card p-5 rounded-[2rem] flex items-center justify-between animate-in relative overflow-hidden";
+            div.innerHTML = `
+                <div class="absolute left-0 top-0 w-1.5 h-full bg-emerald-500"></div>
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-emerald-500/10 text-emerald-600 rounded-xl flex items-center justify-center">
+                        <i data-lucide="check-circle" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-slate-700 leading-none mb-1">Presensi Terverifikasi</p>
+                        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">${log.waktu}</p>
+                    </div>
+                </div>
+                <div class="text-[9px] font-black text-emerald-600 bg-emerald-500/10 px-3 py-1.5 rounded-full uppercase border border-emerald-500/10">
+                    ${log.jarak}
+                </div>`;
+            
+            if (prepend) container.prepend(div); else container.appendChild(div);
             lucide.createIcons();
             document.getElementById('logCount').innerText = `${container.querySelectorAll('.glass-card').length} SESI`;
         }
@@ -440,21 +456,30 @@
         function showToast(message, color) {
             const toast = document.getElementById('statusToast');
             const content = document.getElementById('toastContent');
+            const icon = document.getElementById('toastIcon');
+            
             document.getElementById('toastMessage').textContent = message;
+            
             if (color === 'emerald') {
-                content.className = "aero-blur bg-white/80 border border-emerald-500/20 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3 text-emerald-600";
+                content.className = "aero-blur bg-white/90 border border-emerald-500/20 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3 text-emerald-600";
+                icon.setAttribute('data-lucide', 'check-circle');
             } else {
-                content.className = "aero-blur bg-white/80 border border-rose-500/20 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3 text-rose-600";
+                content.className = "aero-blur bg-white/90 border border-rose-500/20 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3 text-rose-600";
+                icon.setAttribute('data-lucide', 'alert-circle');
             }
-            toast.classList.remove('hidden', 'opacity-0');
-            setTimeout(() => { 
-                toast.classList.add('opacity-0'); 
-                setTimeout(() => toast.classList.add('hidden'), 300); 
-            }, 3000);
+            
+            lucide.createIcons();
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        /**
+         * Fungsi Logout Langsung
+         * Menghapus status login dengan memuat ulang halaman
+         */
+        function handleLogout() { 
+            location.reload(); 
         }
     </script>
 </body>
 </html>
-
-
-
