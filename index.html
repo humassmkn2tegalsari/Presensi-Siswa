@@ -5,9 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>E Presensi - SMKN 2 Tegalsari</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -67,18 +65,52 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        .type-selector label {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--aero-shadow);
+            color: #64748b;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .type-selector label:hover {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        #typeMasuk:checked + label {
+            background: #10b981;
+            color: white;
+            border-color: #10b981;
+            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
+            backdrop-filter: none;
+        }
+
+        #typePulang:checked + label {
+            background: #f43f5e;
+            color: white;
+            border-color: #f43f5e;
+            box-shadow: 0 10px 25px -5px rgba(244, 63, 94, 0.4);
+            backdrop-filter: none;
+        }
+
+        .session-locked {
+            opacity: 0.4;
+            filter: grayscale(1);
+            cursor: not-allowed !important;
+        }
     </style>
 </head>
 <body class="min-h-screen">
 
-    <!-- Ornamen Latar Belakang -->
     <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[100px] -z-10 animate-pulse"></div>
     <div class="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-pink-500/10 rounded-full blur-[100px] -z-10"></div>
 
-    <!-- Toast Notifikasi -->
     <div id="statusToast" class="hidden fixed top-6 inset-x-4 z-[100] flex justify-center transform transition-all duration-300">
         <div id="toastContent" class="aero-blur bg-white/80 border border-white/40 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3">
-            <i id="toastIcon" data-lucide="info" class="w-5 h-5 text-indigo-600"></i>
+            <i id="toastIcon" data-lucide="info" class="w-5 h-5"></i>
             <span id="toastMessage" class="font-bold text-sm tracking-tight text-slate-700">Pesan</span>
         </div>
     </div>
@@ -139,8 +171,6 @@
     <!-- HALAMAN PRESENSI -->
     <div id="presensiPage" class="hidden p-4 md:p-8 animate-in transition-all duration-500">
         <div class="max-w-xl mx-auto space-y-6">
-            
-            <!-- Navbar Header -->
             <div class="flex items-center justify-between glass-card p-4 rounded-[2rem] sticky top-4 z-50">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg">
@@ -156,14 +186,32 @@
                 </button>
             </div>
 
-            <!-- Jam Digital Aero -->
-            <div class="glass-card p-8 rounded-[3rem] overflow-hidden relative group text-center space-y-2">
+            <div class="glass-card p-8 rounded-[3rem] text-center space-y-2">
                 <p id="realtimeDayDate" class="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">---</p>
                 <h2 id="realtimeClock" class="text-5xl md:text-6xl font-black tracking-tighter gradient-text">00:00:00</h2>
-                <p id="sessionInfo" class="text-[9px] font-extrabold text-indigo-500/60 uppercase tracking-widest pt-2">Memuat Sesi...</p>
+                <div id="sessionTimeInfo" class="flex justify-center gap-3 mt-2">
+                    <span id="infoMasuk" class="text-[8px] bg-slate-100 px-2 py-1 rounded-full font-bold text-slate-500">MASUK: --:--</span>
+                    <span id="infoPulang" class="text-[8px] bg-slate-100 px-2 py-1 rounded-full font-bold text-slate-500">PULANG: --:--</span>
+                </div>
             </div>
 
-            <!-- Lokasi Tracking -->
+            <div class="flex gap-4">
+                <div class="type-selector flex-1">
+                    <input type="radio" id="typeMasuk" name="presensiType" value="MASUK" class="hidden" checked>
+                    <label id="labelMasuk" for="typeMasuk" class="flex flex-col items-center justify-center py-4 rounded-3xl cursor-pointer">
+                        <i data-lucide="log-in" class="w-5 h-5 mb-1"></i>
+                        <span class="text-[10px] font-black uppercase tracking-widest">Masuk</span>
+                    </label>
+                </div>
+                <div class="type-selector flex-1">
+                    <input type="radio" id="typePulang" name="presensiType" value="PULANG" class="hidden">
+                    <label id="labelPulang" for="typePulang" class="flex flex-col items-center justify-center py-4 rounded-3xl cursor-pointer">
+                        <i data-lucide="log-out" class="w-5 h-5 mb-1"></i>
+                        <span class="text-[10px] font-black uppercase tracking-widest">Pulang</span>
+                    </label>
+                </div>
+            </div>
+
             <div class="glass-card rounded-[3rem] p-8 space-y-8">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
@@ -174,7 +222,7 @@
                         <h2 class="font-black text-slate-800 text-sm uppercase tracking-wider">Lokasi Sekolah</h2>
                     </div>
                     <div id="displayRadius" class="bg-indigo-500/10 px-4 py-1.5 rounded-full text-[10px] font-extrabold text-indigo-500 border border-indigo-500/20 uppercase tracking-widest">
-                        ...
+                        Radius 100M
                     </div>
                 </div>
 
@@ -191,30 +239,27 @@
                         <i data-lucide="map-pin-off" class="w-8 h-8"></i>
                     </div>
                     <p id="errorMsg" class="text-sm text-rose-600 font-bold leading-relaxed"></p>
-                    <button onclick="startTracking()" class="tap-scale px-8 py-3 bg-rose-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-rose-500/20">Reset Lokasi</button>
+                    <button onclick="startTracking()" class="tap-scale px-8 py-3 bg-rose-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest">Reset Lokasi</button>
                 </div>
 
                 <div id="mainContent" class="hidden space-y-8">
                     <div class="flex flex-col items-center relative">
-                        <div id="rangeVisual" class="relative w-52 h-52 flex items-center justify-center rounded-full bg-slate-500/5 transition-all duration-700 border-4 border-white/10 shadow-inner">
+                        <div id="rangeVisual" class="relative w-52 h-52 flex items-center justify-center rounded-full bg-slate-500/5 border-4 border-white/10">
                             <div id="pingEffect" class="hidden absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-10"></div>
-                            <div id="distanceCircle" class="w-40 h-40 rounded-full flex flex-col items-center justify-center transition-all duration-500 shadow-2xl bg-slate-200 text-slate-400">
+                            <div id="distanceCircle" class="w-40 h-40 rounded-full flex flex-col items-center justify-center transition-all duration-500 bg-slate-200 text-slate-400">
                                 <span id="distanceValue" class="text-5xl font-black tracking-tighter">0</span>
                                 <span class="text-[10px] font-extrabold uppercase tracking-[0.2em] mt-1">Meter</span>
                             </div>
                         </div>
-                        
                         <div class="mt-8 flex flex-col items-center gap-2">
-                            <div id="statusBadge" class="px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-sm transition-all duration-500 bg-slate-200 text-slate-500">
-                                Mencari Lokasi
-                            </div>
+                            <div id="statusBadge" class="px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] bg-slate-200 text-slate-500">Mencari Lokasi</div>
                             <p id="statusLabel" class="text-[11px] font-bold text-slate-400 text-center px-4 leading-relaxed"></p>
                         </div>
                     </div>
 
                     <button id="absenBtn" disabled onclick="handleAbsen()" 
-                        class="tap-scale w-full py-6 rounded-[2rem] font-black text-sm tracking-[0.3em] transition-all shadow-2xl active:scale-95 bg-slate-500/10 text-slate-400 border border-slate-500/10 uppercase">
-                        Konfirmasi Hadir
+                        class="tap-scale w-full py-6 rounded-[2rem] font-black text-sm tracking-[0.3em] transition-all shadow-2xl bg-slate-500/10 text-slate-400 border border-slate-500/10 uppercase">
+                        Konfirmasi Presensi
                     </button>
                 </div>
             </div>
@@ -225,6 +270,7 @@
                     <span id="logCount" class="text-[10px] font-black text-indigo-500 bg-indigo-500/10 px-3 py-1 rounded-full uppercase">0 Sesi</span>
                 </div>
                 <div id="logContainer" class="space-y-4">
+                    <!-- Data riwayat akan di-inject ke sini -->
                     <div id="logEmpty" class="text-center py-10 glass-card rounded-[2.5rem] opacity-40">
                         <i data-lucide="history" class="w-8 h-8 mx-auto mb-2 text-slate-400"></i>
                         <p class="text-[10px] font-bold uppercase tracking-widest">Belum ada riwayat</p>
@@ -235,8 +281,8 @@
     </div>
 
     <script>
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxk3QxaBOMJO_j7agCNDs8nQha26X2HS_2EByx2_zMR8WEr-y7y1EqXOHXw-qs-a8ex/exec";
-        let schoolConfig = { lat: -7.837572, lng: 113.935195, radius: 100, start_time: "06:00", end_time: "17:00" };
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCC9ehP-MqTDlJ482w5Q7GQSxSo4-Z_dScPmIKKuyP5B7TYQloaR3diAic5ujm4fdc/exec";
+        
         let currentUser = null;
         let currentDistance = null;
         let currentCoords = null;
@@ -261,9 +307,25 @@
             const now = new Date();
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             document.getElementById('realtimeDayDate').innerText = now.toLocaleDateString('id-ID', options);
-            document.getElementById('realtimeClock').innerText = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\./g, ':');
+            const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\./g, ':');
+            document.getElementById('realtimeClock').innerText = timeStr;
+
+            if (currentUser) {
+                validateSessionTimes(timeStr.substring(0, 5));
+            }
         }
         setInterval(updateRealtimeClock, 1000);
+
+        function validateSessionTimes(currentTime) {
+            const labelMasuk = document.getElementById('labelMasuk');
+            const labelPulang = document.getElementById('labelPulang');
+
+            const isMasukOpen = currentTime >= currentUser.start_time_masuk && currentTime <= currentUser.end_time_masuk;
+            const isPulangOpen = currentTime >= currentUser.start_time_pulang && currentTime <= currentUser.end_time_pulang;
+
+            if (!isMasukOpen) labelMasuk.classList.add('session-locked'); else labelMasuk.classList.remove('session-locked');
+            if (!isPulangOpen) labelPulang.classList.add('session-locked'); else labelPulang.classList.remove('session-locked');
+        }
 
         async function handleLogin() {
             const user = document.getElementById('loginUser').value.trim();
@@ -281,22 +343,22 @@
 
                 if (result.status === "success") {
                     currentUser = result.data;
-                    if (currentUser.latitude) schoolConfig.lat = parseFloat(currentUser.latitude);
-                    if (currentUser.longitude) schoolConfig.lng = parseFloat(currentUser.longitude);
-                    if (currentUser.radius) schoolConfig.radius = parseInt(currentUser.radius);
-                    if (currentUser.start_time) schoolConfig.start_time = currentUser.start_time;
-                    if (currentUser.end_time) schoolConfig.end_time = currentUser.end_time;
-
+                    
                     document.getElementById('loginPage').classList.add('hidden');
                     document.getElementById('presensiPage').classList.remove('hidden');
+                    
                     document.getElementById('displayNama').innerText = currentUser.nama;
                     document.getElementById('displayInfo').innerText = `${currentUser.kelas} • ${currentUser.jurusan}`;
-                    document.getElementById('displayRadius').innerText = `Radius ${schoolConfig.radius}M`;
-                    document.getElementById('sessionInfo').innerText = `Sesi Aktif: ${schoolConfig.start_time} - ${schoolConfig.end_time} WIB`;
+                    document.getElementById('displayRadius').innerText = `Radius ${currentUser.radius}M`;
                     
+                    document.getElementById('infoMasuk').innerText = `MASUK: ${currentUser.start_time_masuk}-${currentUser.end_time_masuk}`;
+                    document.getElementById('infoPulang').innerText = `PULANG: ${currentUser.start_time_pulang}-${currentUser.end_time_pulang}`;
+
                     showToast("Login Berhasil!", "emerald");
-                    await fetchUserHistory(currentUser.nama);
                     startTracking();
+                    
+                    // Panggil riwayat segera setelah login
+                    fetchUserHistory(currentUser.nama);
                 } else {
                     showToast(result.message || "Gagal Login!", "rose");
                 }
@@ -306,19 +368,6 @@
                 btn.disabled = false;
                 btn.innerText = "Masuk";
             }
-        }
-
-        async function fetchUserHistory(nama) {
-            const container = document.getElementById('logContainer');
-            const today = new Date().toLocaleDateString('id-ID');
-            try {
-                const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getHistory&nama=${encodeURIComponent(nama)}&tanggal=${encodeURIComponent(today)}`);
-                const result = await res.json();
-                if (result.status === "success" && result.data.length > 0) {
-                    container.innerHTML = "";
-                    result.data.forEach(item => addLogToUI({ waktu: item.waktu, jarak: item.jarak }, false));
-                }
-            } catch (e) { console.error(e); }
         }
 
         function getDistance(lat1, lon1, lat2, lon2) {
@@ -331,14 +380,14 @@
         function updateUI(position) {
             const { latitude, longitude, accuracy } = position.coords;
             currentCoords = { lat: latitude, lng: longitude };
-            currentDistance = getDistance(latitude, longitude, schoolConfig.lat, schoolConfig.lng);
+            currentDistance = getDistance(latitude, longitude, parseFloat(currentUser.latitude), parseFloat(currentUser.longitude));
             
             document.getElementById('loadingState').classList.add('hidden');
             document.getElementById('errorState').classList.add('hidden');
             document.getElementById('mainContent').classList.remove('hidden');
             
             const dist = Math.round(currentDistance);
-            const isIn = currentDistance <= schoolConfig.radius;
+            const isIn = currentDistance <= currentUser.radius;
             
             document.getElementById('distanceValue').textContent = dist;
             
@@ -355,7 +404,7 @@
                 badge.className = "px-6 py-2 rounded-full text-[10px] font-black uppercase bg-emerald-500 text-white shadow-lg shadow-emerald-500/20";
                 badge.innerText = "LOKASI VALID";
                 ping.classList.remove('hidden');
-                label.innerHTML = "Anda berada di dalam area presensi.<br><span class='text-emerald-500'>Silahkan tekan tombol di bawah.</span>";
+                label.innerHTML = "Anda berada di dalam jangkauan.<br><span class='text-emerald-500'>Silahkan tekan tombol di bawah.</span>";
                 
                 if (!isSubmitting) {
                     btn.disabled = false;
@@ -382,7 +431,7 @@
                 navigator.geolocation.watchPosition(updateUI, (err) => {
                     document.getElementById('loadingState').classList.add('hidden');
                     document.getElementById('errorState').classList.remove('hidden');
-                    document.getElementById('errorMsg').innerText = "Izin lokasi ditolak atau GPS tidak aktif. Silahkan aktifkan lokasi.";
+                    document.getElementById('errorMsg').innerText = "Izin lokasi diperlukan. Pastikan GPS aktif.";
                 }, { enableHighAccuracy: true, timeout: 10000 });
             } else {
                 showToast("Browser tidak mendukung GPS", "rose");
@@ -391,31 +440,46 @@
 
         async function handleAbsen() {
             const now = new Date();
-            const timeNow = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+            const timeNowFull = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\./g, ':');
+            const timeCheck = timeNowFull.substring(0, 5);
             
-            if (timeNow < schoolConfig.start_time || timeNow > schoolConfig.end_time) {
-                return showToast(`Di luar jam: ${schoolConfig.start_time}-${schoolConfig.end_time}`, "rose");
+            const typeSelected = document.querySelector('input[name="presensiType"]:checked').value;
+            const start = typeSelected === 'MASUK' ? currentUser.start_time_masuk : currentUser.start_time_pulang;
+            const end = typeSelected === 'MASUK' ? currentUser.end_time_masuk : currentUser.end_time_pulang;
+
+            if (timeCheck < start || timeCheck > end) {
+                return showToast(`Sesi ${typeSelected} Tutup (${start}-${end})`, "rose");
             }
-            
-            if (currentDistance > schoolConfig.radius || isSubmitting) return;
-            
+
+            if (currentDistance > currentUser.radius || isSubmitting) return;
+
             isSubmitting = true;
             const btn = document.getElementById('absenBtn');
-            btn.disabled = true;
             const originalText = btn.innerHTML;
             btn.innerHTML = `<span class="animate-pulse">MENGIRIM...</span>`;
 
             const data = {
-                nama: currentUser.nama, kelas: currentUser.kelas, jurusan: currentUser.jurusan,
-                waktu: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-                tanggal: now.toLocaleDateString('id-ID'), koordinat: `${currentCoords.lat}, ${currentCoords.lng}`,
-                jarak: Math.round(currentDistance) + "m"
+                action: "presensi",
+                nama: currentUser.nama, 
+                kelas: currentUser.kelas, 
+                jurusan: currentUser.jurusan,
+                waktu: timeNowFull,
+                tanggal: now.toLocaleDateString('id-ID'), 
+                koordinat: `${currentCoords.lat}, ${currentCoords.lng}`,
+                jarak: Math.round(currentDistance) + "m",
+                tipe: typeSelected
             };
 
             try {
-                await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify(data), mode: 'no-cors' });
+                await fetch(GOOGLE_SCRIPT_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify(data), 
+                    mode: 'no-cors' 
+                });
+                
                 setTimeout(() => {
-                    showToast("Presensi Berhasil!", "emerald");
+                    showToast(`Presensi ${typeSelected} Berhasil!`, "emerald");
+                    // Tambahkan ke UI langsung tanpa refresh
                     addLogToUI(data, true);
                     isSubmitting = false;
                     btn.innerHTML = originalText;
@@ -427,30 +491,84 @@
             }
         }
 
+        /**
+         * Fungsi untuk mengambil riwayat aktifitas hari ini
+         */
+        async function fetchUserHistory(nama) {
+            const container = document.getElementById('logContainer');
+            // Ambil tanggal hari ini dalam format dd/mm/yyyy (disesuaikan dengan script.gs)
+            const now = new Date();
+            const today = now.getDate() + "/" + (now.getMonth() + 1) + "/" + now.getFullYear();
+            
+            try {
+                // Tambahkan cache busting agar data selalu segar
+                const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getHistory&nama=${encodeURIComponent(nama)}&tanggal=${encodeURIComponent(today)}&_t=${Date.now()}`);
+                const result = await res.json();
+                
+                if (result.status === "success") {
+                    if (result.data && result.data.length > 0) {
+                        // Bersihkan container
+                        container.innerHTML = "";
+                        // Render satu per satu
+                        result.data.forEach(item => addLogToUI(item, false));
+                    } else {
+                        // Render state kosong jika memang tidak ada data
+                        container.innerHTML = `
+                            <div id="logEmpty" class="text-center py-10 glass-card rounded-[2.5rem] opacity-40">
+                                <i data-lucide="history" class="w-8 h-8 mx-auto mb-2 text-slate-400"></i>
+                                <p class="text-[10px] font-bold uppercase tracking-widest">Belum ada riwayat</p>
+                            </div>
+                        `;
+                        lucide.createIcons();
+                    }
+                    // Update counter
+                    document.getElementById('logCount').innerText = `${result.data ? result.data.length : 0} SESI`;
+                }
+            } catch (e) { 
+                console.error("Error fetching history:", e);
+                showToast("Gagal memuat riwayat", "rose");
+            }
+        }
+
+        /**
+         * Fungsi untuk merender kartu riwayat ke dalam UI
+         */
         function addLogToUI(log, prepend = true) {
             const container = document.getElementById('logContainer');
-            if (document.getElementById('logEmpty')) document.getElementById('logEmpty').remove();
+            const emptyState = document.getElementById('logEmpty');
+            
+            // Hapus placeholder kosong jika ada
+            if (emptyState) emptyState.remove();
             
             const div = document.createElement('div');
+            const isPulang = log.tipe === 'PULANG';
+            const colorClass = isPulang ? 'bg-rose-500' : 'bg-emerald-500';
+            const iconBg = isPulang ? 'bg-rose-500/10 text-rose-600' : 'bg-emerald-500/10 text-emerald-600';
+
             div.className = "glass-card p-5 rounded-[2rem] flex items-center justify-between animate-in relative overflow-hidden";
             div.innerHTML = `
-                <div class="absolute left-0 top-0 w-1.5 h-full bg-emerald-500"></div>
+                <div class="absolute left-0 top-0 w-1.5 h-full ${colorClass}"></div>
                 <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 bg-emerald-500/10 text-emerald-600 rounded-xl flex items-center justify-center">
-                        <i data-lucide="check-circle" class="w-5 h-5"></i>
+                    <div class="w-10 h-10 ${iconBg} rounded-xl flex items-center justify-center">
+                        <i data-lucide="${isPulang ? 'log-out' : 'check-circle'}" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <p class="text-xs font-black text-slate-700 leading-none mb-1">Presensi Terverifikasi</p>
+                        <p class="text-xs font-black text-slate-700 leading-none mb-1">Presensi ${log.tipe}</p>
                         <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">${log.waktu}</p>
                     </div>
                 </div>
-                <div class="text-[9px] font-black text-emerald-600 bg-emerald-500/10 px-3 py-1.5 rounded-full uppercase border border-emerald-500/10">
+                <div class="text-[9px] font-black ${isPulang ? 'text-rose-600 bg-rose-50' : 'text-emerald-600 bg-emerald-50'} px-3 py-1.5 rounded-full uppercase">
                     ${log.jarak}
                 </div>`;
             
             if (prepend) container.prepend(div); else container.appendChild(div);
+            
+            // Re-render icons untuk elemen baru
             lucide.createIcons();
-            document.getElementById('logCount').innerText = `${container.querySelectorAll('.glass-card').length} SESI`;
+            
+            // Update jumlah sesi di header riwayat
+            const currentCount = container.querySelectorAll('.glass-card:not(#logEmpty)').length;
+            document.getElementById('logCount').innerText = `${currentCount} SESI`;
         }
 
         function showToast(message, color) {
@@ -473,12 +591,25 @@
             setTimeout(() => toast.classList.add('hidden'), 3000);
         }
 
-        /**
-         * Fungsi Logout Langsung
-         * Menghapus status login dengan memuat ulang halaman
-         */
         function handleLogout() { 
-            location.reload(); 
+            // Reset state data
+            currentUser = null;
+            // Kembalikan ke tampilan riwayat kosong
+            document.getElementById('logContainer').innerHTML = `
+                <div id="logEmpty" class="text-center py-10 glass-card rounded-[2.5rem] opacity-40">
+                    <i data-lucide="history" class="w-8 h-8 mx-auto mb-2 text-slate-400"></i>
+                    <p class="text-[10px] font-bold uppercase tracking-widest">Belum ada riwayat</p>
+                </div>
+            `;
+            document.getElementById('logCount').innerText = "0 SESI";
+            
+            // Ganti halaman
+            document.getElementById('presensiPage').classList.add('hidden');
+            document.getElementById('loginPage').classList.remove('hidden');
+            
+            // Bersihkan input password
+            document.getElementById('loginPass').value = "";
+            lucide.createIcons();
         }
     </script>
 </body>
