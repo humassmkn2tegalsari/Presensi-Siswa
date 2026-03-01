@@ -22,6 +22,7 @@
             background-attachment: fixed;
             color: #1e293b;
             overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .glass-card {
@@ -76,10 +77,6 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .type-selector label:hover {
-            background: rgba(255, 255, 255, 0.9);
-        }
-
         #typeMasuk:checked + label {
             background: #10b981;
             color: white;
@@ -100,6 +97,7 @@
             opacity: 0.4;
             filter: grayscale(1);
             cursor: not-allowed !important;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -108,6 +106,7 @@
     <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[100px] -z-10 animate-pulse"></div>
     <div class="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-pink-500/10 rounded-full blur-[100px] -z-10"></div>
 
+    <!-- TOAST NOTIFICATION -->
     <div id="statusToast" class="hidden fixed top-6 inset-x-4 z-[100] flex justify-center transform transition-all duration-300">
         <div id="toastContent" class="aero-blur bg-white/80 border border-white/40 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3">
             <i id="toastIcon" data-lucide="info" class="w-5 h-5"></i>
@@ -126,7 +125,6 @@
                 <div class="w-32 h-32 flex items-center justify-center mx-auto animate-float">
                     <img src="https://lh3.googleusercontent.com/d/15zyF01OHtEgTl8p6bvEkz7xw30ByE2en" 
                          alt="Logo Sekolah" 
-                         id="appLogo"
                          class="w-full h-full object-contain drop-shadow-2xl"
                          onerror="this.src='https://ui-avatars.com/api/?name=SMK&background=6366f1&color=fff'">
                 </div>
@@ -169,15 +167,16 @@
     </div>
 
     <!-- HALAMAN PRESENSI -->
-    <div id="presensiPage" class="hidden p-4 md:p-8 animate-in transition-all duration-500">
+    <div id="presensiPage" class="hidden p-4 md:p-8 animate-in">
         <div class="max-w-xl mx-auto space-y-6">
+            <!-- Header User -->
             <div class="flex items-center justify-between glass-card p-4 rounded-[2rem] sticky top-4 z-50">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg">
                         <i data-lucide="user-check" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <h1 id="displayNama" class="text-sm font-black text-slate-800 truncate max-w-[120px]">Memuat...</h1>
+                        <h1 id="displayNama" class="text-sm font-black text-slate-800 truncate max-w-[150px]">Memuat...</h1>
                         <p id="displayInfo" class="text-[9px] font-bold text-slate-400 uppercase tracking-tight"></p>
                     </div>
                 </div>
@@ -186,15 +185,17 @@
                 </button>
             </div>
 
+            <!-- Jam Realtime -->
             <div class="glass-card p-8 rounded-[3rem] text-center space-y-2">
                 <p id="realtimeDayDate" class="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">---</p>
                 <h2 id="realtimeClock" class="text-5xl md:text-6xl font-black tracking-tighter gradient-text">00:00:00</h2>
-                <div id="sessionTimeInfo" class="flex justify-center gap-3 mt-2">
+                <div id="sessionTimeInfo" class="flex justify-center gap-2 mt-2 flex-wrap">
                     <span id="infoMasuk" class="text-[8px] bg-slate-100 px-2 py-1 rounded-full font-bold text-slate-500">MASUK: --:--</span>
                     <span id="infoPulang" class="text-[8px] bg-slate-100 px-2 py-1 rounded-full font-bold text-slate-500">PULANG: --:--</span>
                 </div>
             </div>
 
+            <!-- Selector Tipe -->
             <div class="flex gap-4">
                 <div class="type-selector flex-1">
                     <input type="radio" id="typeMasuk" name="presensiType" value="MASUK" class="hidden" checked>
@@ -212,6 +213,7 @@
                 </div>
             </div>
 
+            <!-- Panel Geolocation -->
             <div class="glass-card rounded-[3rem] p-8 space-y-8">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
@@ -222,7 +224,7 @@
                         <h2 class="font-black text-slate-800 text-sm uppercase tracking-wider">Lokasi Sekolah</h2>
                     </div>
                     <div id="displayRadius" class="bg-indigo-500/10 px-4 py-1.5 rounded-full text-[10px] font-extrabold text-indigo-500 border border-indigo-500/20 uppercase tracking-widest">
-                        Radius 100M
+                        Radius --M
                     </div>
                 </div>
 
@@ -264,13 +266,13 @@
                 </div>
             </div>
 
+            <!-- Riwayat -->
             <div class="space-y-4 pb-12">
                 <div class="flex items-center justify-between px-4">
                     <h3 class="font-black text-slate-800 text-xs uppercase tracking-[0.2em]">Aktivitas Hari Ini</h3>
                     <span id="logCount" class="text-[10px] font-black text-indigo-500 bg-indigo-500/10 px-3 py-1 rounded-full uppercase">0 Sesi</span>
                 </div>
                 <div id="logContainer" class="space-y-4">
-                    <!-- Data riwayat akan di-inject ke sini -->
                     <div id="logEmpty" class="text-center py-10 glass-card rounded-[2.5rem] opacity-40">
                         <i data-lucide="history" class="w-8 h-8 mx-auto mb-2 text-slate-400"></i>
                         <p class="text-[10px] font-bold uppercase tracking-widest">Belum ada riwayat</p>
@@ -281,14 +283,26 @@
     </div>
 
     <script>
+        // CONFIG
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCC9ehP-MqTDlJ482w5Q7GQSxSo4-Z_dScPmIKKuyP5B7TYQloaR3diAic5ujm4fdc/exec";
         
         let currentUser = null;
         let currentDistance = null;
         let currentCoords = null;
         let isSubmitting = false;
+        let watchId = null;
 
+        // INIT UI
         lucide.createIcons();
+
+        // Check for saved session
+        window.onload = () => {
+            const saved = localStorage.getItem('skarida_session');
+            if (saved) {
+                currentUser = JSON.parse(saved);
+                showPresensiPage();
+            }
+        };
 
         function togglePasswordVisibility() {
             const passInput = document.getElementById('loginPass');
@@ -343,22 +357,9 @@
 
                 if (result.status === "success") {
                     currentUser = result.data;
-                    
-                    document.getElementById('loginPage').classList.add('hidden');
-                    document.getElementById('presensiPage').classList.remove('hidden');
-                    
-                    document.getElementById('displayNama').innerText = currentUser.nama;
-                    document.getElementById('displayInfo').innerText = `${currentUser.kelas} • ${currentUser.jurusan}`;
-                    document.getElementById('displayRadius').innerText = `Radius ${currentUser.radius}M`;
-                    
-                    document.getElementById('infoMasuk').innerText = `MASUK: ${currentUser.start_time_masuk}-${currentUser.end_time_masuk}`;
-                    document.getElementById('infoPulang').innerText = `PULANG: ${currentUser.start_time_pulang}-${currentUser.end_time_pulang}`;
-
+                    localStorage.setItem('skarida_session', JSON.stringify(currentUser));
+                    showPresensiPage();
                     showToast("Login Berhasil!", "emerald");
-                    startTracking();
-                    
-                    // Panggil riwayat segera setelah login
-                    fetchUserHistory(currentUser.nama);
                 } else {
                     showToast(result.message || "Gagal Login!", "rose");
                 }
@@ -368,6 +369,21 @@
                 btn.disabled = false;
                 btn.innerText = "Masuk";
             }
+        }
+
+        function showPresensiPage() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('presensiPage').classList.remove('hidden');
+            
+            document.getElementById('displayNama').innerText = currentUser.nama;
+            document.getElementById('displayInfo').innerText = `${currentUser.kelas} • ${currentUser.jurusan}`;
+            document.getElementById('displayRadius').innerText = `Radius ${currentUser.radius}M`;
+            
+            document.getElementById('infoMasuk').innerText = `MASUK: ${currentUser.start_time_masuk}-${currentUser.end_time_masuk}`;
+            document.getElementById('infoPulang').innerText = `PULANG: ${currentUser.start_time_pulang}-${currentUser.end_time_pulang}`;
+
+            startTracking();
+            fetchUserHistory(currentUser.nama);
         }
 
         function getDistance(lat1, lon1, lat2, lon2) {
@@ -404,7 +420,7 @@
                 badge.className = "px-6 py-2 rounded-full text-[10px] font-black uppercase bg-emerald-500 text-white shadow-lg shadow-emerald-500/20";
                 badge.innerText = "LOKASI VALID";
                 ping.classList.remove('hidden');
-                label.innerHTML = "Anda berada di dalam jangkauan.<br><span class='text-emerald-500'>Silahkan tekan tombol di bawah.</span>";
+                label.innerHTML = "Anda berada di dalam jangkauan.<br><span class='text-emerald-600'>Silahkan tekan tombol di bawah.</span>";
                 
                 if (!isSubmitting) {
                     btn.disabled = false;
@@ -424,15 +440,17 @@
         }
 
         function startTracking() {
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+            
             document.getElementById('errorState').classList.add('hidden');
             document.getElementById('loadingState').classList.remove('hidden');
             
             if (navigator.geolocation) {
-                navigator.geolocation.watchPosition(updateUI, (err) => {
+                watchId = navigator.geolocation.watchPosition(updateUI, (err) => {
                     document.getElementById('loadingState').classList.add('hidden');
                     document.getElementById('errorState').classList.remove('hidden');
-                    document.getElementById('errorMsg').innerText = "Izin lokasi diperlukan. Pastikan GPS aktif.";
-                }, { enableHighAccuracy: true, timeout: 10000 });
+                    document.getElementById('errorMsg').innerText = "Gagal memuat GPS. Pastikan izin lokasi aktif.";
+                }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
             } else {
                 showToast("Browser tidak mendukung GPS", "rose");
             }
@@ -456,6 +474,7 @@
             isSubmitting = true;
             const btn = document.getElementById('absenBtn');
             const originalText = btn.innerHTML;
+            btn.disabled = true;
             btn.innerHTML = `<span class="animate-pulse">MENGIRIM...</span>`;
 
             const data = {
@@ -471,6 +490,7 @@
             };
 
             try {
+                // Post data using fetch (handle no-cors for Google Script)
                 await fetch(GOOGLE_SCRIPT_URL, { 
                     method: 'POST', 
                     body: JSON.stringify(data), 
@@ -479,7 +499,6 @@
                 
                 setTimeout(() => {
                     showToast(`Presensi ${typeSelected} Berhasil!`, "emerald");
-                    // Tambahkan ke UI langsung tanpa refresh
                     addLogToUI(data, true);
                     isSubmitting = false;
                     btn.innerHTML = originalText;
@@ -487,57 +506,36 @@
             } catch (e) {
                 showToast("Gagal mengirim data!", "rose");
                 isSubmitting = false;
+                btn.disabled = false;
                 btn.innerHTML = originalText;
             }
         }
 
-        /**
-         * Fungsi untuk mengambil riwayat aktifitas hari ini
-         */
         async function fetchUserHistory(nama) {
             const container = document.getElementById('logContainer');
-            // Ambil tanggal hari ini dalam format dd/mm/yyyy (disesuaikan dengan script.gs)
             const now = new Date();
             const today = now.getDate() + "/" + (now.getMonth() + 1) + "/" + now.getFullYear();
             
             try {
-                // Tambahkan cache busting agar data selalu segar
                 const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getHistory&nama=${encodeURIComponent(nama)}&tanggal=${encodeURIComponent(today)}&_t=${Date.now()}`);
                 const result = await res.json();
                 
                 if (result.status === "success") {
                     if (result.data && result.data.length > 0) {
-                        // Bersihkan container
                         container.innerHTML = "";
-                        // Render satu per satu
                         result.data.forEach(item => addLogToUI(item, false));
-                    } else {
-                        // Render state kosong jika memang tidak ada data
-                        container.innerHTML = `
-                            <div id="logEmpty" class="text-center py-10 glass-card rounded-[2.5rem] opacity-40">
-                                <i data-lucide="history" class="w-8 h-8 mx-auto mb-2 text-slate-400"></i>
-                                <p class="text-[10px] font-bold uppercase tracking-widest">Belum ada riwayat</p>
-                            </div>
-                        `;
-                        lucide.createIcons();
                     }
-                    // Update counter
                     document.getElementById('logCount').innerText = `${result.data ? result.data.length : 0} SESI`;
                 }
             } catch (e) { 
-                console.error("Error fetching history:", e);
-                showToast("Gagal memuat riwayat", "rose");
+                console.error("History error:", e);
             }
         }
 
-        /**
-         * Fungsi untuk merender kartu riwayat ke dalam UI
-         */
         function addLogToUI(log, prepend = true) {
             const container = document.getElementById('logContainer');
             const emptyState = document.getElementById('logEmpty');
             
-            // Hapus placeholder kosong jika ada
             if (emptyState) emptyState.remove();
             
             const div = document.createElement('div');
@@ -562,13 +560,28 @@
                 </div>`;
             
             if (prepend) container.prepend(div); else container.appendChild(div);
-            
-            // Re-render icons untuk elemen baru
             lucide.createIcons();
             
-            // Update jumlah sesi di header riwayat
             const currentCount = container.querySelectorAll('.glass-card:not(#logEmpty)').length;
             document.getElementById('logCount').innerText = `${currentCount} SESI`;
+        }
+
+        function handleLogout() {
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+            localStorage.removeItem('skarida_session');
+            currentUser = null;
+            
+            document.getElementById('presensiPage').classList.add('hidden');
+            document.getElementById('loginPage').classList.remove('hidden');
+            document.getElementById('logContainer').innerHTML = `
+                <div id="logEmpty" class="text-center py-10 glass-card rounded-[2.5rem] opacity-40">
+                    <i data-lucide="history" class="w-8 h-8 mx-auto mb-2 text-slate-400"></i>
+                    <p class="text-[10px] font-bold uppercase tracking-widest">Belum ada riwayat</p>
+                </div>`;
+            document.getElementById('logCount').innerText = "0 SESI";
+            
+            showToast("Keluar berhasil", "emerald");
+            lucide.createIcons();
         }
 
         function showToast(message, color) {
@@ -579,37 +592,16 @@
             document.getElementById('toastMessage').textContent = message;
             
             if (color === 'emerald') {
-                content.className = "aero-blur bg-white/90 border border-emerald-500/20 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3 text-emerald-600";
+                content.className = "aero-blur bg-white/95 border border-emerald-500/20 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3 text-emerald-600";
                 icon.setAttribute('data-lucide', 'check-circle');
             } else {
-                content.className = "aero-blur bg-white/90 border border-rose-500/20 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3 text-rose-600";
+                content.className = "aero-blur bg-white/95 border border-rose-500/20 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3 text-rose-600";
                 icon.setAttribute('data-lucide', 'alert-circle');
             }
             
             lucide.createIcons();
             toast.classList.remove('hidden');
             setTimeout(() => toast.classList.add('hidden'), 3000);
-        }
-
-        function handleLogout() { 
-            // Reset state data
-            currentUser = null;
-            // Kembalikan ke tampilan riwayat kosong
-            document.getElementById('logContainer').innerHTML = `
-                <div id="logEmpty" class="text-center py-10 glass-card rounded-[2.5rem] opacity-40">
-                    <i data-lucide="history" class="w-8 h-8 mx-auto mb-2 text-slate-400"></i>
-                    <p class="text-[10px] font-bold uppercase tracking-widest">Belum ada riwayat</p>
-                </div>
-            `;
-            document.getElementById('logCount').innerText = "0 SESI";
-            
-            // Ganti halaman
-            document.getElementById('presensiPage').classList.add('hidden');
-            document.getElementById('loginPage').classList.remove('hidden');
-            
-            // Bersihkan input password
-            document.getElementById('loginPass').value = "";
-            lucide.createIcons();
         }
     </script>
 </body>
