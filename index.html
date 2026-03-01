@@ -103,10 +103,11 @@
 </head>
 <body class="min-h-screen">
 
+    <!-- Dekorasi Background -->
     <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[100px] -z-10 animate-pulse"></div>
     <div class="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-pink-500/10 rounded-full blur-[100px] -z-10"></div>
 
-    <!-- TOAST NOTIFICATION -->
+    <!-- Toast Notifikasi -->
     <div id="statusToast" class="hidden fixed top-6 inset-x-4 z-[100] flex justify-center transform transition-all duration-300">
         <div id="toastContent" class="aero-blur bg-white/80 border border-white/40 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3">
             <i id="toastIcon" data-lucide="info" class="w-5 h-5"></i>
@@ -114,7 +115,7 @@
         </div>
     </div>
 
-    <!-- HALAMAN LOGIN -->
+    <!-- Halaman Login -->
     <div id="loginPage" class="min-h-screen flex items-center justify-center p-6">
         <div class="w-full max-w-md glass-card rounded-[3rem] p-10 space-y-10 relative overflow-hidden animate-in">
             <div class="absolute top-0 right-0 p-8 opacity-5">
@@ -166,10 +167,10 @@
         </div>
     </div>
 
-    <!-- HALAMAN PRESENSI -->
+    <!-- Halaman Presensi -->
     <div id="presensiPage" class="hidden p-4 md:p-8 animate-in">
         <div class="max-w-xl mx-auto space-y-6">
-            <!-- Header User -->
+            <!-- Header Profil -->
             <div class="flex items-center justify-between glass-card p-4 rounded-[2rem] sticky top-4 z-50">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg">
@@ -195,7 +196,7 @@
                 </div>
             </div>
 
-            <!-- Selector Tipe -->
+            <!-- Tipe Presensi -->
             <div class="flex gap-4">
                 <div class="type-selector flex-1">
                     <input type="radio" id="typeMasuk" name="presensiType" value="MASUK" class="hidden" checked>
@@ -213,7 +214,7 @@
                 </div>
             </div>
 
-            <!-- Panel Geolocation -->
+            <!-- Area Geolocation -->
             <div class="glass-card rounded-[3rem] p-8 space-y-8">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
@@ -228,22 +229,25 @@
                     </div>
                 </div>
 
+                <!-- State: Loading GPS -->
                 <div id="loadingState" class="flex flex-col items-center py-12 space-y-6">
                     <div class="relative w-20 h-20">
                         <div class="absolute inset-0 border-4 border-indigo-500/10 rounded-full"></div>
                         <div class="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
                     </div>
-                    <p class="text-sm font-bold text-slate-400 animate-pulse tracking-widest uppercase italic">Mensinkronkan GPS...</p>
+                    <p class="text-sm font-bold text-slate-400 animate-pulse tracking-widest uppercase italic">Memuat Lokasi Terbaru...</p>
                 </div>
 
+                <!-- State: Error GPS -->
                 <div id="errorState" class="hidden bg-rose-500/5 border border-rose-500/20 p-8 rounded-[2.5rem] text-center space-y-4">
                     <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
                         <i data-lucide="map-pin-off" class="w-8 h-8"></i>
                     </div>
                     <p id="errorMsg" class="text-sm text-rose-600 font-bold leading-relaxed"></p>
-                    <button onclick="startTracking()" class="tap-scale px-8 py-3 bg-rose-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest">Reset Lokasi</button>
+                    <button onclick="startTracking(true)" class="tap-scale px-8 py-3 bg-rose-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest">Coba Lagi</button>
                 </div>
 
+                <!-- State: Valid GPS -->
                 <div id="mainContent" class="hidden space-y-8">
                     <div class="flex flex-col items-center relative">
                         <div id="rangeVisual" class="relative w-52 h-52 flex items-center justify-center rounded-full bg-slate-500/5 border-4 border-white/10">
@@ -266,7 +270,7 @@
                 </div>
             </div>
 
-            <!-- Riwayat -->
+            <!-- Riwayat Aktivitas -->
             <div class="space-y-4 pb-12">
                 <div class="flex items-center justify-between px-4">
                     <h3 class="font-black text-slate-800 text-xs uppercase tracking-[0.2em]">Aktivitas Hari Ini</h3>
@@ -283,7 +287,6 @@
     </div>
 
     <script>
-        // CONFIG
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCC9ehP-MqTDlJ482w5Q7GQSxSo4-Z_dScPmIKKuyP5B7TYQloaR3diAic5ujm4fdc/exec";
         
         let currentUser = null;
@@ -292,15 +295,14 @@
         let isSubmitting = false;
         let watchId = null;
 
-        // INIT UI
         lucide.createIcons();
 
-        // Check for saved session
+        // Cek sesi yang tersimpan saat pertama kali dibuka
         window.onload = () => {
             const saved = localStorage.getItem('skarida_session');
             if (saved) {
                 currentUser = JSON.parse(saved);
-                showPresensiPage();
+                showPresensiPage(true); // Param true untuk memicu refresh GPS paksa
             }
         };
 
@@ -346,10 +348,10 @@
             const pass = document.getElementById('loginPass').value.trim();
             const btn = document.getElementById('btnLogin');
 
-            if (!user || !pass) return showToast("Isi semua data!", "rose");
+            if (!user || !pass) return showToast("Mohon isi semua data!", "rose");
 
             btn.disabled = true;
-            btn.innerHTML = `<span class="animate-pulse">Memverifikasi...</span>`;
+            btn.innerHTML = `<span class="animate-pulse">Menghubungkan...</span>`;
 
             try {
                 const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=login&user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`);
@@ -358,8 +360,8 @@
                 if (result.status === "success") {
                     currentUser = result.data;
                     localStorage.setItem('skarida_session', JSON.stringify(currentUser));
-                    showPresensiPage();
-                    showToast("Login Berhasil!", "emerald");
+                    showPresensiPage(true); // Panggil dengan refresh GPS paksa
+                    showToast("Selamat Datang!", "emerald");
                 } else {
                     showToast(result.message || "Gagal Login!", "rose");
                 }
@@ -371,7 +373,7 @@
             }
         }
 
-        function showPresensiPage() {
+        function showPresensiPage(forceGpsRefresh = false) {
             document.getElementById('loginPage').classList.add('hidden');
             document.getElementById('presensiPage').classList.remove('hidden');
             
@@ -382,12 +384,18 @@
             document.getElementById('infoMasuk').innerText = `MASUK: ${currentUser.start_time_masuk}-${currentUser.end_time_masuk}`;
             document.getElementById('infoPulang').innerText = `PULANG: ${currentUser.start_time_pulang}-${currentUser.end_time_pulang}`;
 
-            startTracking();
+            // Reset UI ke keadaan loading sebelum memuat GPS
+            if (forceGpsRefresh) {
+                document.getElementById('mainContent').classList.add('hidden');
+                document.getElementById('loadingState').classList.remove('hidden');
+            }
+
+            startTracking(forceGpsRefresh);
             fetchUserHistory(currentUser.nama);
         }
 
         function getDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3;
+            const R = 6371e3; // Radius Bumi dalam meter
             const p = Math.PI / 180;
             const a = 0.5 - Math.cos((lat2 - lat1) * p) / 2 + Math.cos(lat1 * p) * Math.cos(lat2 * p) * (1 - Math.cos((lon2 - lon1) * p)) / 2;
             return R * 2 * Math.asin(Math.sqrt(a));
@@ -420,7 +428,7 @@
                 badge.className = "px-6 py-2 rounded-full text-[10px] font-black uppercase bg-emerald-500 text-white shadow-lg shadow-emerald-500/20";
                 badge.innerText = "LOKASI VALID";
                 ping.classList.remove('hidden');
-                label.innerHTML = "Anda berada di dalam jangkauan.<br><span class='text-emerald-600'>Silahkan tekan tombol di bawah.</span>";
+                label.innerHTML = "Anda berada di jangkauan sekolah.<br><span class='text-emerald-600'>Silahkan tekan tombol konfirmasi.</span>";
                 
                 if (!isSubmitting) {
                     btn.disabled = false;
@@ -439,18 +447,32 @@
             }
         }
 
-        function startTracking() {
-            if (watchId) navigator.geolocation.clearWatch(watchId);
+        /**
+         * Fungsi startTracking yang diperkuat untuk memuat ulang GPS
+         */
+        function startTracking(force = false) {
+            // Bersihkan tracker yang ada jika ada
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
             
             document.getElementById('errorState').classList.add('hidden');
             document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('mainContent').classList.add('hidden');
             
             if (navigator.geolocation) {
+                // Gunakan watchPosition untuk pemantauan realtime
+                // maximumAge: 0 memastikan browser tidak mengambil data lama dari cache
                 watchId = navigator.geolocation.watchPosition(updateUI, (err) => {
                     document.getElementById('loadingState').classList.add('hidden');
                     document.getElementById('errorState').classList.remove('hidden');
-                    document.getElementById('errorMsg').innerText = "Gagal memuat GPS. Pastikan izin lokasi aktif.";
-                }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+                    document.getElementById('errorMsg').innerText = "Gagal memuat GPS. Pastikan Izin Lokasi aktif & GPS Aktif.";
+                }, { 
+                    enableHighAccuracy: true, 
+                    timeout: 20000, 
+                    maximumAge: 0 
+                });
             } else {
                 showToast("Browser tidak mendukung GPS", "rose");
             }
@@ -475,7 +497,7 @@
             const btn = document.getElementById('absenBtn');
             const originalText = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = `<span class="animate-pulse">MENGIRIM...</span>`;
+            btn.innerHTML = `<span class="animate-pulse">Mengirim Data...</span>`;
 
             const data = {
                 action: "presensi",
@@ -490,7 +512,7 @@
             };
 
             try {
-                // Post data using fetch (handle no-cors for Google Script)
+                // Mengirim data ke Google Script
                 await fetch(GOOGLE_SCRIPT_URL, { 
                     method: 'POST', 
                     body: JSON.stringify(data), 
@@ -528,7 +550,7 @@
                     document.getElementById('logCount').innerText = `${result.data ? result.data.length : 0} SESI`;
                 }
             } catch (e) { 
-                console.error("History error:", e);
+                console.error("Gagal memuat riwayat:", e);
             }
         }
 
@@ -567,7 +589,12 @@
         }
 
         function handleLogout() {
-            if (watchId) navigator.geolocation.clearWatch(watchId);
+            // Bersihkan tracker GPS
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            
             localStorage.removeItem('skarida_session');
             currentUser = null;
             
@@ -580,7 +607,7 @@
                 </div>`;
             document.getElementById('logCount').innerText = "0 SESI";
             
-            showToast("Keluar berhasil", "emerald");
+            showToast("Berhasil Logout", "emerald");
             lucide.createIcons();
         }
 
