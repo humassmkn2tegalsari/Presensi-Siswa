@@ -302,7 +302,7 @@
             const saved = localStorage.getItem('skarida_session');
             if (saved) {
                 currentUser = JSON.parse(saved);
-                showPresensiPage(true); // Param true untuk memicu refresh GPS paksa
+                showPresensiPage(true); 
             }
         };
 
@@ -360,7 +360,7 @@
                 if (result.status === "success") {
                     currentUser = result.data;
                     localStorage.setItem('skarida_session', JSON.stringify(currentUser));
-                    showPresensiPage(true); // Panggil dengan refresh GPS paksa
+                    showPresensiPage(true); 
                     showToast("Selamat Datang!", "emerald");
                 } else {
                     showToast(result.message || "Gagal Login!", "rose");
@@ -384,18 +384,18 @@
             document.getElementById('infoMasuk').innerText = `MASUK: ${currentUser.start_time_masuk}-${currentUser.end_time_masuk}`;
             document.getElementById('infoPulang').innerText = `PULANG: ${currentUser.start_time_pulang}-${currentUser.end_time_pulang}`;
 
-            // Reset UI ke keadaan loading sebelum memuat GPS
             if (forceGpsRefresh) {
                 document.getElementById('mainContent').classList.add('hidden');
                 document.getElementById('loadingState').classList.remove('hidden');
             }
 
             startTracking(forceGpsRefresh);
+            // Muat riwayat dari server saat masuk ke halaman presensi
             fetchUserHistory(currentUser.nama);
         }
 
         function getDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3; // Radius Bumi dalam meter
+            const R = 6371e3; 
             const p = Math.PI / 180;
             const a = 0.5 - Math.cos((lat2 - lat1) * p) / 2 + Math.cos(lat1 * p) * Math.cos(lat2 * p) * (1 - Math.cos((lon2 - lon1) * p)) / 2;
             return R * 2 * Math.asin(Math.sqrt(a));
@@ -447,11 +447,7 @@
             }
         }
 
-        /**
-         * Fungsi startTracking yang diperkuat untuk memuat ulang GPS
-         */
         function startTracking(force = false) {
-            // Bersihkan tracker yang ada jika ada
             if (watchId !== null) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
@@ -462,8 +458,6 @@
             document.getElementById('mainContent').classList.add('hidden');
             
             if (navigator.geolocation) {
-                // Gunakan watchPosition untuk pemantauan realtime
-                // maximumAge: 0 memastikan browser tidak mengambil data lama dari cache
                 watchId = navigator.geolocation.watchPosition(updateUI, (err) => {
                     document.getElementById('loadingState').classList.add('hidden');
                     document.getElementById('errorState').classList.remove('hidden');
@@ -512,19 +506,20 @@
             };
 
             try {
-                // Mengirim data ke Google Script
+                // Post data ke Google Sheet
                 await fetch(GOOGLE_SCRIPT_URL, { 
                     method: 'POST', 
                     body: JSON.stringify(data), 
                     mode: 'no-cors' 
                 });
                 
-                setTimeout(() => {
+                // Segera refresh riwayat setelah mengirim presensi
+                setTimeout(async () => {
                     showToast(`Presensi ${typeSelected} Berhasil!`, "emerald");
-                    addLogToUI(data, true);
+                    await fetchUserHistory(currentUser.nama);
                     isSubmitting = false;
                     btn.innerHTML = originalText;
-                }, 1000);
+                }, 1500);
             } catch (e) {
                 showToast("Gagal mengirim data!", "rose");
                 isSubmitting = false;
@@ -533,24 +528,49 @@
             }
         }
 
+        /**
+         * Fungsi fetchUserHistory yang telah diperbarui untuk menarik data riwayat
+         * langsung dari database Google Sheet (presensi_masuk & presensi_pulang)
+         */
         async function fetchUserHistory(nama) {
             const container = document.getElementById('logContainer');
+            const logCountLabel = document.getElementById('logCount');
+            
+            // Format tanggal hari ini sesuai dengan yang tersimpan di sheet (biasanya DD/MM/YYYY atau sesuai locale ID)
             const now = new Date();
-            const today = now.getDate() + "/" + (now.getMonth() + 1) + "/" + now.getFullYear();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = now.getFullYear();
+            const today = `${day}/${month}/${year}`;
             
             try {
+                // Memanggil endpoint getHistory di Google Apps Script
                 const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getHistory&nama=${encodeURIComponent(nama)}&tanggal=${encodeURIComponent(today)}&_t=${Date.now()}`);
                 const result = await res.json();
                 
                 if (result.status === "success") {
+                    // Bersihkan container riwayat
+                    container.innerHTML = "";
+                    
                     if (result.data && result.data.length > 0) {
-                        container.innerHTML = "";
+                        // Iterasi data dari server dan tampilkan ke UI
                         result.data.forEach(item => addLogToUI(item, false));
+                        logCountLabel.innerText = `${result.data.length} SESI`;
+                    } else {
+                        // Tampilkan state kosong jika tidak ada data ditemukan di sheet untuk hari ini
+                        container.innerHTML = `
+                            <div id="logEmpty" class="text-center py-10 glass-card rounded-[2.5rem] opacity-40">
+                                <i data-lucide="history" class="w-8 h-8 mx-auto mb-2 text-slate-400"></i>
+                                <p class="text-[10px] font-bold uppercase tracking-widest">Belum ada riwayat hari ini</p>
+                            </div>`;
+                        logCountLabel.innerText = "0 SESI";
                     }
-                    document.getElementById('logCount').innerText = `${result.data ? result.data.length : 0} SESI`;
                 }
             } catch (e) { 
-                console.error("Gagal memuat riwayat:", e);
+                console.error("Gagal memuat riwayat dari sheet:", e);
+                // Jika gagal, pastikan state kosong tetap terlihat atau tampilkan error ringan
+            } finally {
+                lucide.createIcons();
             }
         }
 
@@ -578,18 +598,14 @@
                     </div>
                 </div>
                 <div class="text-[9px] font-black ${isPulang ? 'text-rose-600 bg-rose-50' : 'text-emerald-600 bg-emerald-50'} px-3 py-1.5 rounded-full uppercase">
-                    ${log.jarak}
+                    ${log.jarak || 'Valid'}
                 </div>`;
             
             if (prepend) container.prepend(div); else container.appendChild(div);
             lucide.createIcons();
-            
-            const currentCount = container.querySelectorAll('.glass-card:not(#logEmpty)').length;
-            document.getElementById('logCount').innerText = `${currentCount} SESI`;
         }
 
         function handleLogout() {
-            // Bersihkan tracker GPS
             if (watchId !== null) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
