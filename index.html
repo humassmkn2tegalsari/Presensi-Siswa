@@ -239,7 +239,7 @@
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
                         </span>
-                        <h2 class="font-black text-slate-800 text-sm uppercase tracking-wider">Lokasi Sekolah</h2>
+                        <h2 class="font-black text-slate-800 text-sm uppercase tracking-wider">Lokasi Presensi</h2>
                     </div>
                     <div id="displayRadius" class="bg-indigo-500/10 px-4 py-1.5 rounded-full text-[10px] font-extrabold text-indigo-500 border border-indigo-500/20 uppercase tracking-widest">
                         Radius --M
@@ -445,7 +445,7 @@
                 badge.className = "px-6 py-2 rounded-full text-[10px] font-black uppercase bg-emerald-500 text-white shadow-lg shadow-emerald-500/20";
                 badge.innerText = "LOKASI VALID";
                 ping.classList.remove('hidden');
-                label.innerHTML = "Anda berada di jangkauan sekolah.<br><span class='text-emerald-600'>Silahkan tekan tombol konfirmasi.</span>";
+                label.innerHTML = "Anda berada dalam jangkauan.<br><span class='text-emerald-600'>Silahkan tekan tombol konfirmasi.</span>";
                 
                 if (!isSubmitting) {
                     btn.disabled = false;
@@ -457,7 +457,7 @@
                 badge.className = "px-6 py-2 rounded-full text-[10px] font-black uppercase bg-slate-200 text-slate-500";
                 badge.innerText = "DI LUAR RADIUS";
                 ping.classList.add('hidden');
-                label.innerHTML = "Dekati area sekolah untuk presensi.<br><span class='text-rose-500'>Akurasi GPS: " + Math.round(accuracy) + "m</span>";
+                label.innerHTML = "Dekati area jangkauan untuk presensi.<br><span class='text-rose-500'>Akurasi GPS: " + Math.round(accuracy) + "m</span>";
                 
                 btn.disabled = true;
                 btn.className = "w-full py-6 rounded-[2rem] font-black text-sm tracking-[0.3em] bg-slate-500/10 text-slate-400 border border-slate-500/10 uppercase cursor-not-allowed";
