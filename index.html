@@ -499,7 +499,7 @@
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, minZoom: 2 }).addTo(map);
 
             const schoolIcon = L.divIcon({ className: 'custom-school-icon', iconSize: [24, 24], iconAnchor: [12, 12] });
-            schoolMarker = L.marker([schoolLat, schoolLng], { icon: schoolIcon }).addTo(map).bindPopup("Lokasi Sekolah");
+            schoolMarker = L.marker([schoolLat, schoolLng], { icon: schoolIcon }).addTo(map).bindPopup("Lokasi Presensi");
 
             radiusCircle = L.circle([schoolLat, schoolLng], {
                 color: '#10b981', fillColor: '#10b981', fillOpacity: 0.1, radius: radius, weight: 2, dashArray: '5, 5'
