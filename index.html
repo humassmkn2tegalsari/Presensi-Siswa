@@ -73,7 +73,15 @@
             background: #f43f5e; color: white; border-color: #f43f5e;
             box-shadow: 0 10px 25px -5px rgba(244, 63, 94, 0.4); backdrop-filter: none;
         }
-        .session-locked { opacity: 0.4; filter: grayscale(1); cursor: not-allowed !important; pointer-events: none; }
+        
+        /* Tombol yang sudah digunakan / di luar jam sesi */
+        .session-locked { 
+            opacity: 0.4; 
+            filter: grayscale(1); 
+            cursor: not-allowed !important; 
+            pointer-events: none; 
+        }
+
         .modal-backdrop { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
         .modal-slide-in { animation: modalSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         @keyframes modalSlide { from { opacity: 0; transform: translateY(40px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
@@ -375,7 +383,7 @@
 
                     <div class="relative pt-2">
                         <p class="text-center text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3">atau jika tidak bisa hadir</p>
-                        <button onclick="openIzinModal()" class="tap-scale w-full py-4 rounded-[1.8rem] font-black text-xs tracking-[0.2em] transition-all bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-xl shadow-amber-500/30 flex items-center justify-center gap-2 uppercase">
+                        <button id="btnAjukanIzin" onclick="openIzinModal()" class="tap-scale w-full py-4 rounded-[1.8rem] font-black text-xs tracking-[0.2em] transition-all bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-xl shadow-amber-500/30 flex items-center justify-center gap-2 uppercase">
                             <i data-lucide="file-text" class="w-4 h-4"></i>
                             Ajukan Izin
                         </button>
@@ -405,10 +413,17 @@
         let currentDistance = null;
         let currentCoords = null;
         let isSubmitting = false;
+        let isSubmittingIzin = false;
         let watchId = null;
         let selectedIzinType = null;
         let lastRefreshTime = 0;
-        let isSubmittingIzin = false; // 🆕 FIX: Flag untuk cegah double-submit izin
+        
+        // Status presensi hari ini
+        let todayStatus = {
+            masuk: false,
+            pulang: false,
+            izin: false
+        };
         
         let uploadedImageBase64 = null;
         let uploadedFileName = null;
@@ -422,7 +437,6 @@
 
         lucide.createIcons();
 
-        // 🆕 FIX: HANYA event listener untuk textarea (HAPUS addEventListener untuk tombol)
         document.addEventListener('DOMContentLoaded', () => {
             const textarea = document.getElementById('izinKeterangan');
             if (textarea) {
@@ -562,6 +576,9 @@
             document.getElementById('infoMasuk').innerText = `MASUK: ${currentUser.start_time_masuk}-${currentUser.end_time_masuk}`;
             document.getElementById('infoPulang').innerText = `PULANG: ${currentUser.start_time_pulang}-${currentUser.end_time_pulang}`;
 
+            // Reset status hari ini
+            todayStatus = { masuk: false, pulang: false, izin: false };
+
             initMap();
 
             if (forceGpsRefresh) {
@@ -641,6 +658,62 @@
             }
         }
 
+        // Cek status presensi hari ini dan update UI tombol
+        function checkTodayStatus() {
+            const labelMasuk = document.getElementById('labelMasuk');
+            const labelPulang = document.getElementById('labelPulang');
+            const btnAjukanIzin = document.getElementById('btnAjukanIzin');
+            const absenBtn = document.getElementById('absenBtn');
+            const typeMasuk = document.getElementById('typeMasuk');
+            const typePulang = document.getElementById('typePulang');
+
+            // Reset semua tombol dulu
+            labelMasuk.classList.remove('session-locked');
+            labelPulang.classList.remove('session-locked');
+            
+            btnAjukanIzin.disabled = false;
+            btnAjukanIzin.classList.remove('opacity-50', 'cursor-not-allowed');
+            btnAjukanIzin.className = "tap-scale w-full py-4 rounded-[1.8rem] font-black text-xs tracking-[0.2em] transition-all bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-xl shadow-amber-500/30 flex items-center justify-center gap-2 uppercase";
+            btnAjukanIzin.innerHTML = `<i data-lucide="file-text" class="w-4 h-4"></i><span>Ajukan Izin</span>`;
+            
+            absenBtn.disabled = false;
+            absenBtn.className = "tap-scale w-full py-5 rounded-[2rem] font-black text-sm tracking-[0.3em] transition-all shadow-2xl bg-indigo-600 text-white shadow-2xl shadow-indigo-500/20 border-0 uppercase";
+            absenBtn.innerHTML = "Konfirmasi Presensi";
+
+            // Cek Presensi Masuk - jika sudah, kunci tombolnya
+            if (todayStatus.masuk) {
+                labelMasuk.classList.add('session-locked');
+                if (typeMasuk.checked) {
+                    typePulang.checked = true;
+                }
+            }
+
+            // Cek Presensi Pulang - jika sudah, kunci tombolnya
+            if (todayStatus.pulang) {
+                labelPulang.classList.add('session-locked');
+                if (typePulang.checked && !todayStatus.masuk) {
+                    typeMasuk.checked = true;
+                }
+            }
+
+            // Jika sudah MASUK DAN PULANG, kunci tombol konfirmasi presensi
+            if (todayStatus.masuk && todayStatus.pulang) {
+                absenBtn.disabled = true;
+                absenBtn.className = "w-full py-5 rounded-[2rem] font-black text-sm tracking-[0.3em] bg-slate-500/10 text-slate-400 border border-slate-500/10 uppercase cursor-not-allowed";
+                absenBtn.innerHTML = "Sudah Presensi Lengkap Hari Ini";
+            }
+
+            // Cek Izin - jika sudah, kunci tombolnya
+            if (todayStatus.izin) {
+                btnAjukanIzin.disabled = true;
+                btnAjukanIzin.classList.add('opacity-50', 'cursor-not-allowed');
+                btnAjukanIzin.className = "w-full py-4 rounded-[1.8rem] font-black text-xs tracking-[0.2em] bg-slate-500/10 text-slate-400 border border-slate-500/10 uppercase cursor-not-allowed flex items-center justify-center gap-2";
+                btnAjukanIzin.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i><span>Sudah Izin Hari Ini</span>`;
+            }
+
+            lucide.createIcons();
+        }
+
         async function handleAbsen() {
             const now = new Date();
             const timeNowFull = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\./g, ':');
@@ -653,9 +726,18 @@
             if (timeCheck < start || timeCheck > end) return showToast(`Sesi ${typeSelected} Tutup (${start}-${end})`, "rose");
             if (currentDistance > currentUser.radius || isSubmitting) return;
 
+            // Cek apakah sudah presensi tipe ini hari ini
+            if (typeSelected === 'MASUK' && todayStatus.masuk) {
+                return showToast("Anda sudah melakukan presensi MASUK hari ini!", "amber");
+            }
+            if (typeSelected === 'PULANG' && todayStatus.pulang) {
+                return showToast("Anda sudah melakukan presensi PULANG hari ini!", "amber");
+            }
+
             isSubmitting = true;
             const btn = document.getElementById('absenBtn');
             const originalText = btn.innerHTML;
+            const originalClass = btn.className;
             btn.disabled = true;
             btn.innerHTML = `<span class="animate-pulse">Mengirim Data...</span>`;
 
@@ -666,18 +748,34 @@
             };
 
             try {
-                await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify(data), mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+                const response = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+                const result = await response.json();
+                
+                if (result.status === "error") {
+                    showToast(result.message || "Gagal mengirim data!", "rose");
+                    isSubmitting = false;
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    btn.className = originalClass;
+                    return;
+                }
+
+                // Update status lokal
+                if (typeSelected === 'MASUK') todayStatus.masuk = true;
+                if (typeSelected === 'PULANG') todayStatus.pulang = true;
+                
                 setTimeout(async () => {
                     showToast(`Presensi ${typeSelected} Berhasil!`, "emerald");
                     await fetchUserHistory(currentUser.nama);
                     isSubmitting = false;
-                    btn.innerHTML = originalText;
-                }, 1500);
+                    checkTodayStatus();
+                }, 1000);
             } catch (e) {
                 showToast("Gagal mengirim data!", "rose");
                 isSubmitting = false;
                 btn.disabled = false;
                 btn.innerHTML = originalText;
+                btn.className = originalClass;
             }
         }
 
@@ -733,6 +831,9 @@
         }
 
         function openIzinModal() {
+            if (todayStatus.izin) {
+                return showToast("Anda sudah mengajukan izin hari ini!", "amber");
+            }
             if (!currentCoords) return showToast("Lokasi belum tersedia, tunggu GPS aktif", "rose");
             
             document.getElementById('izinKeterangan').value = '';
@@ -769,12 +870,10 @@
             showToast(`Jenis izin: ${type}`, "amber");
         }
 
-        // 🆕 FIX: Fungsi handleIzin dengan proteksi double-submit
         async function handleIzin() {
-            //  FIX: Cek flag isSubmittingIzin untuk cegah eksekusi ganda
-            if (isSubmittingIzin) {
-                console.log('Izin sedang diproses, abaikan klik tambahan');
-                return;
+            if (isSubmittingIzin) return;
+            if (todayStatus.izin) {
+                return showToast("Anda sudah mengajukan izin hari ini!", "amber");
             }
             
             const keterangan = document.getElementById('izinKeterangan').value.trim();
@@ -786,7 +885,6 @@
             
             if (!confirm(`Yakin ingin mengirim izin "${selectedIzinType}"?\n\nKeterangan: ${keterangan}`)) return;
 
-            //  FIX: Set flag sebelum proses dimulai
             isSubmittingIzin = true;
             const originalHTML = btn.innerHTML;
             btn.disabled = true;
@@ -806,20 +904,31 @@
             };
 
             try {
-                await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) });
+                const response = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) });
+                const result = await response.json();
+                
+                if (result.status === "error") {
+                    showToast(result.message || "Gagal mengirim izin!", "rose");
+                    isSubmittingIzin = false;
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                    return;
+                }
+
+                todayStatus.izin = true;
+                
                 showToast(`Izin ${selectedIzinType} terkirim!`, "emerald");
                 closeIzinModal();
                 setTimeout(async () => {
-                    // 🆕 FIX: Reset flag setelah selesai
                     isSubmittingIzin = false;
                     btn.disabled = false; 
                     btn.innerHTML = originalHTML;
                     await fetchUserHistory(currentUser.nama);
+                    checkTodayStatus();
                 }, 2000);
             } catch (e) {
                 console.error("Error kirim izin:", e);
                 showToast("Gagal mengirim izin! Cek koneksi internet.", "rose");
-                // 🆕 FIX: Reset flag saat error
                 isSubmittingIzin = false;
                 btn.disabled = false; 
                 btn.innerHTML = originalHTML;
@@ -841,9 +950,19 @@
                         const sorted = [...result.data].reverse();
                         sorted.forEach(item => addLogToUI(item, false));
                         logCountLabel.innerText = `${result.data.length} SESI`;
+                        
+                        // Cek status presensi hari ini dari data riwayat
+                        todayStatus.masuk = sorted.some(item => item.tipe === 'MASUK');
+                        todayStatus.pulang = sorted.some(item => item.tipe === 'PULANG');
+                        todayStatus.izin = sorted.some(item => item.tipe === 'IZIN');
+                        
+                        checkTodayStatus();
                     } else {
                         container.innerHTML = `<div id="logEmpty" class="text-center py-10 glass-card rounded-[2.5rem] opacity-40"><i data-lucide="history" class="w-8 h-8 mx-auto mb-2 text-slate-400"></i><p class="text-[10px] font-bold uppercase tracking-widest">Belum ada riwayat hari ini</p></div>`;
                         logCountLabel.innerText = "0 SESI";
+                        
+                        todayStatus = { masuk: false, pulang: false, izin: false };
+                        checkTodayStatus();
                     }
                 }
             } catch (e) { console.error("Gagal memuat riwayat:", e); } finally { lucide.createIcons(); }
@@ -897,7 +1016,8 @@
             localStorage.removeItem('skarida_session');
             localStorage.removeItem('skarida_last_refresh');
             currentUser = null;
-            isSubmittingIzin = false; // 🆕 FIX: Reset flag saat logout
+            isSubmittingIzin = false;
+            todayStatus = { masuk: false, pulang: false, izin: false };
             
             document.getElementById('presensiPage').classList.add('hidden');
             document.getElementById('loginPage').classList.remove('hidden');
@@ -935,7 +1055,10 @@
         setInterval(async () => {
             if (currentUser && !document.hidden && currentUser.username) {
                 const lastRefresh = parseInt(localStorage.getItem('skarida_last_refresh') || '0');
-                if (Date.now() - lastRefresh > 30 * 60 * 1000) await silentRefreshUserData();
+                if (Date.now() - lastRefresh > 30 * 60 * 1000) {
+                    await silentRefreshUserData();
+                    await fetchUserHistory(currentUser.nama);
+                }
             }
         }, 5 * 60 * 1000);
     </script>
