@@ -140,23 +140,23 @@
 </head>
 <body class="min-h-screen">
 
-    <!-- 🆕 NOTIFIKASI POPUP -->
-    <div id="notifPopup" class="hidden fixed top-110 left-1/2 transform -translate-x-1/2 z-[150] w-11/12 max-w-md animate-in">
-        <div class="glass-card bg-amber-50/90 border border-amber-200 rounded-2xl shadow-2xl p-5 relative">
-            <button onclick="closeNotif()" class="absolute top-3 right-3 text-amber-600 hover:text-amber-800 hover:bg-amber-100 rounded-full p-1 transition-all">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-            <div class="flex items-start gap-4 pr-6">
-                <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-                    <i data-lucide="bell" class="w-6 h-6"></i>
-                </div>
-                <div class="flex-1">
-                    <h3 class="text-xs font-black text-amber-800 uppercase tracking-widest mb-1">Pengumuman Penting</h3>
-                    <p id="notifText" class="text-sm font-bold text-amber-900 leading-relaxed"></p>
-                </div>
+<!--  NOTIFIKASI POPUP (EFEK MELUNCUR HALUS & POSISI CENTER) -->
+<div id="notifPopup" class="hidden fixed top-[100px] left-1/2 z-[150] w-11/12 max-w-md" style="transform: translate(-50%, -30px); opacity: 0; transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);">
+    <div class="glass-card bg-amber-50/90 border border-amber-200 rounded-2xl shadow-2xl p-5 relative">
+        <button onclick="closeNotif()" class="absolute top-3 right-3 text-amber-600 hover:text-amber-800 hover:bg-amber-100 rounded-full p-1 transition-all">
+            <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+        <div class="flex items-start gap-4 pr-6">
+            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                <i data-lucide="bell" class="w-6 h-6"></i>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-xs font-black text-amber-800 uppercase tracking-widest mb-1">Pengumuman Penting</h3>
+                <p id="notifText" class="text-sm font-bold text-amber-900 leading-relaxed"></p>
             </div>
         </div>
     </div>
+</div>
 
     <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[100px] -z-10 animate-pulse"></div>
     <div class="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-pink-500/10 rounded-full blur-[100px] -z-10"></div>
@@ -1000,42 +1000,51 @@
             setTimeout(() => toast.classList.add('hidden'), 3000);
         }
 
-        // 🆕 FUNGSI NOTIFIKASI POPUP
-        async function fetchAndShowNotif() {
-            try {
-                const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getNotif&_t=${Date.now()}`);
-                const result = await res.json();
+// 🆕 FUNGSI NOTIFIKASI POPUP (DENGAN EFEK MELUNCUR)
+async function fetchAndShowNotif() {
+    try {
+        const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getNotif&_t=${Date.now()}`);
+        const result = await res.json();
+        
+        if (result.status === "success" && result.data) {
+            const popup = document.getElementById('notifPopup');
+            const textEl = document.getElementById('notifText');
+            
+            if (result.data.status.toLowerCase() === 'aktif' && result.data.pesan) {
+                textEl.innerText = result.data.pesan;
                 
-                if (result.status === "success" && result.data) {
-                    const popup = document.getElementById('notifPopup');
-                    const textEl = document.getElementById('notifText');
-                    
-                    if (result.data.status.toLowerCase() === 'aktif' && result.data.pesan) {
-                        textEl.innerText = result.data.pesan;
-                        popup.classList.remove('hidden');
-                        lucide.createIcons();
-                    } else {
-                        popup.classList.add('hidden');
-                    }
-                }
-            } catch (e) {
-                console.error("Gagal memuat notifikasi:", e);
+                // 1. Tampilkan elemen dulu (masih opacity 0 dan posisi di atas)
+                popup.classList.remove('hidden');
+                
+                // 2. Paksa browser merender ulang (reflow) agar transisi berjalan
+                void popup.offsetWidth; 
+                
+                // 3. Jalankan efek meluncur ke posisi akhir (tengah & opacity penuh)
+                popup.style.opacity = '1';
+                popup.style.transform = 'translate(-50%, 0)';
+                
+                lucide.createIcons();
+            } else {
+                popup.classList.add('hidden');
             }
         }
+    } catch (e) {
+        console.error("Gagal memuat notifikasi:", e);
+    }
+}
 
-        function closeNotif() {
-            const popup = document.getElementById('notifPopup');
-            popup.style.opacity = '0';
-            popup.style.transform = 'translate(-50%, -20px)';
-            popup.style.transition = 'all 0.3s ease';
-            
-            setTimeout(() => {
-                popup.classList.add('hidden');
-                popup.style.opacity = '';
-                popup.style.transform = '';
-                popup.style.transition = '';
-            }, 300);
-        }
+function closeNotif() {
+    const popup = document.getElementById('notifPopup');
+    
+    // 1. Kembalikan ke posisi atas dan opacity 0 (efek meluncur keluar)
+    popup.style.opacity = '0';
+    popup.style.transform = 'translate(-50%, -30px)';
+    
+    // 2. Sembunyikan elemen setelah animasi selesai (0.5 detik)
+    setTimeout(() => {
+        popup.classList.add('hidden');
+    }, 500);
+}
 
         document.getElementById('izinModal').addEventListener('click', (e) => {
             if (e.target.id === 'izinModal') closeIzinModal();
