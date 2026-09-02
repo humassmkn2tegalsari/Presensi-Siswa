@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="E-Presensi">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <meta charset="UTF-8">
+    <title>E Presensi - SMKN 2 Tegalsari</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --aero-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+        }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at top left, #f0f4ff 0%, #ffffff 40%, #fdf2f8 100%);
+            background-attachment: fixed;
+            color: #1e293b;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--aero-shadow);
+        }
+        .aero-blur { backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .gradient-text {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .tap-scale { transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .tap-scale:active { transform: scale(0.95); }
+        .animate-in { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .type-selector label {
+            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border); box-shadow: var(--aero-shadow);
+            color: #64748b; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #typeMasuk:checked + label {
+            background: #10b981; color: white; border-color: #10b981;
+            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4); backdrop-filter: none;
+        }
+        #typePulang:checked + label {
+            background: #f43f5e; color: white; border-color: #f43f5e;
+            box-shadow: 0 10px 25px -5px rgba(244, 63, 94, 0.4); backdrop-filter: none;
+        }
+        .session-locked { opacity: 0.4; filter: grayscale(1); cursor: not-allowed !important; pointer-events: none; }
+        .modal-backdrop { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .modal-slide-in { animation: modalSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes modalSlide { from { opacity: 0; transform: translateY(40px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .izin-type-chip { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+        .izin-type-chip.active {
+            background: linear-gradient(135deg, #f59e0b, #f97316); color: white; border-color: transparent;
+            box-shadow: 0 8px 20px -5px rgba(245, 158, 11, 0.4);
+        }
+
+        .upload-area {
+            position: relative; width: 100%; height: 180px;
+            border: 2px dashed #cbd5e1; border-radius: 1.5rem;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            transition: all 0.3s ease; cursor: pointer;
+        }
+        .upload-area:hover { border-color: #f59e0b; background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); transform: translateY(-2px); }
+        .upload-area.has-image { border-style: solid; border-color: #10b981; }
+        .upload-area img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
+        .upload-placeholder { text-align: center; color: #64748b; z-index: 1; }
+        .upload-placeholder i { color: #94a3b8; }
+        .upload-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s ease; z-index: 2;
+        }
+        .upload-area:hover .upload-overlay { opacity: 1; }
+        .upload-overlay span { color: white; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; }
+        .remove-photo-btn {
+            position: absolute; top: 8px; right: 8px; width: 32px; height: 32px;
+            background: rgba(244, 63, 94, 0.95); color: white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            backdrop-filter: blur(10px); z-index: 3; transition: transform 0.2s ease; border: 2px solid white;
+        }
+        .remove-photo-btn:hover { transform: scale(1.1); }
+        .file-info {
+            background: #f0fdf4; border: 1px solid #86efac; border-radius: 0.75rem;
+            padding: 0.5rem 0.75rem; display: flex; align-items: center; gap: 0.5rem;
+            font-size: 10px; font-weight: 700; color: #166534;
+        }
+
+        #map { height: 320px; width: 100%; border-radius: 1.5rem; z-index: 1; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05); }
+        @keyframes marker-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(244, 63, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+        }
+        .custom-user-icon {
+            background-color: #f43f5e; width: 20px; height: 20px; border-radius: 50%;
+            border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.3); animation: marker-pulse 2s infinite;
+        }
+        .custom-school-icon {
+            background-color: #6366f1; width: 24px; height: 24px; border-radius: 50%;
+            border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .leaflet-control-attribution { display: none !important; }
+
+        .modal-izin-container { max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+        .modal-izin-header { flex-shrink: 0; }
+        .modal-izin-content {
+            flex: 1; overflow-y: auto; overflow-x: hidden; padding: 1.5rem; min-height: 0;
+            scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent;
+        }
+        .modal-izin-content::-webkit-scrollbar { width: 6px; }
+        .modal-izin-content::-webkit-scrollbar-track { background: transparent; }
+        .modal-izin-content::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        .modal-izin-content::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+        .modal-izin-footer { flex-shrink: 0; z-index: 20; pointer-events: auto; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- 🆕 NOTIFIKASI POPUP -->
+    <div id="notifPopup" class="hidden fixed top-20 left-1/2 transform -translate-x-1/2 z-[150] w-11/12 max-w-md animate-in">
+        <div class="glass-card bg-amber-50/90 border border-amber-200 rounded-2xl shadow-2xl p-5 relative">
+            <button onclick="closeNotif()" class="absolute top-3 right-3 text-amber-600 hover:text-amber-800 hover:bg-amber-100 rounded-full p-1 transition-all">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div class="flex items-start gap-4 pr-6">
+                <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <i data-lucide="bell" class="w-6 h-6"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xs font-black text-amber-800 uppercase tracking-widest mb-1">Pengumuman Penting</h3>
+                    <p id="notifText" class="text-sm font-bold text-amber-900 leading-relaxed"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[100px] -z-10 animate-pulse"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-pink-500/10 rounded-full blur-[100px] -z-10"></div>
+
+    <div id="statusToast" class="hidden fixed top-6 inset-x-4 z-[100] flex justify-center transform transition-all duration-300">
+        <div id="toastContent" class="aero-blur bg-white/80 border border-white/40 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3">
+            <i id="toastIcon" data-lucide="info" class="w-5 h-5"></i>
+            <span id="toastMessage" class="font-bold text-sm tracking-tight text-slate-700">Pesan</span>
+        </div>
+    </div>
+
+    <!-- Modal Izin -->
+    <div id="izinModal" class="hidden fixed inset-0 z-[200] modal-backdrop flex items-end sm:items-center justify-center p-4">
+        <div class="glass-card w-full max-w-md rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden modal-slide-in bg-white/95 modal-izin-container">
+            <div class="modal-izin-header bg-gradient-to-r from-amber-500 to-orange-500 p-6 relative overflow-hidden">
+                <div class="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full"></div>
+                <div class="absolute -right-2 -bottom-8 w-24 h-24 bg-white/10 rounded-full"></div>
+                <div class="relative flex items-center gap-3">
+                    <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                        <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-black text-white tracking-tight">Ajukan Izin</h2>
+                        <p class="text-[10px] font-bold text-white/80 uppercase tracking-widest">Form Ketidakhadiran</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-izin-content space-y-5">
+                <div class="bg-slate-50 p-4 rounded-2xl flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white">
+                        <i data-lucide="user" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <p id="izinUserNama" class="text-xs font-black text-slate-800">-</p>
+                        <p id="izinUserInfo" class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">-</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Jenis Izin</label>
+                    <div class="flex gap-2 flex-wrap">
+                        <button type="button" onclick="selectIzinType('Sakit')" data-type="Sakit" class="izin-type-chip px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider border-2 border-slate-200 bg-white flex items-center gap-1.5">
+                            <i data-lucide="heart-pulse" class="w-3 h-3"></i><span>Sakit</span>
+                        </button>
+                        <button type="button" onclick="selectIzinType('Izin')" data-type="Izin" class="izin-type-chip px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider border-2 border-slate-200 bg-white flex items-center gap-1.5">
+                            <i data-lucide="file-signature" class="w-3 h-3"></i><span>Izin</span>
+                        </button>
+                        <button type="button" onclick="selectIzinType('Force Majeure')" data-type="Force Majeure" class="izin-type-chip px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider border-2 border-slate-200 bg-white flex items-center gap-1.5">
+                            <i data-lucide="triangle-alert" class="w-3 h-3"></i><span>Force Majeure</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                        <i data-lucide="message-square" class="w-3 h-3"></i> Keterangan Alasan
+                    </label>
+                    <textarea id="izinKeterangan" rows="4" maxlength="300" class="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl text-sm font-bold text-slate-700 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 transition-all outline-none resize-none" placeholder="Jelaskan alasan ketidakhadiran"></textarea>
+                    <p class="text-[9px] text-slate-400 font-bold text-right"><span id="charCount">0</span>/300 karakter</p>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                        <i data-lucide="camera" class="w-3 h-3"></i> Foto Dokumen <span class="text-slate-400 normal-case font-bold">(Opsional)</span>
+                    </label>
+                    <div id="uploadArea" class="upload-area" onclick="document.getElementById('fileInput').click()">
+                        <div id="uploadPlaceholder" class="upload-placeholder">
+                            <i data-lucide="upload-cloud" class="w-12 h-12 mx-auto mb-2"></i>
+                            <p class="text-xs font-black text-slate-600">Klik untuk upload foto</p>
+                            <p class="text-[9px] mt-1 font-bold text-slate-400">JPG, PNG (Maks. 2MB)</p>
+                        </div>
+                        <img id="previewImage" class="hidden" alt="Preview">
+                        <div id="uploadOverlay" class="upload-overlay hidden"><span>Ganti Foto</span></div>
+                        <div id="removePhotoBtn" class="remove-photo-btn hidden" onclick="removeImage(event)">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+                    <div id="fileInfo" class="file-info hidden">
+                        <i data-lucide="image" class="w-4 h-4"></i>
+                        <span id="fileName">-</span>
+                        <span id="fileSize" class="ml-auto text-[9px]">-</span>
+                    </div>
+                    <p class="text-[9px] text-slate-400 font-bold">Contoh: Surat dokter, surat izin orang tua, dll.</p>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 p-3 rounded-2xl flex items-center gap-2">
+                    <i data-lucide="map-pin" class="w-4 h-4 text-amber-600 flex-shrink-0"></i>
+                    <p class="text-[10px] font-bold text-amber-700 leading-tight">Titik lokasi Anda saat mengirim izin akan otomatis terekam sebagai bukti.</p>
+                </div>
+            </div>
+            <div class="modal-izin-footer p-4 bg-slate-50/80 backdrop-blur-md border-t border-slate-100 flex gap-3">
+                <button type="button" onclick="closeIzinModal()" class="tap-scale flex-1 py-4 bg-white border-2 border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-colors">Batal</button>
+                <button type="button" id="btnKirimIzin" onclick="handleIzin()" class="tap-scale flex-1 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2">
+                    <i data-lucide="send" class="w-4 h-4"></i><span>Kirim Izin</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Halaman Login -->
+    <div id="loginPage" class="min-h-screen flex items-center justify-center p-6">
+        <div class="w-full max-w-md glass-card rounded-[3rem] p-10 space-y-10 relative overflow-hidden animate-in">
+            <div class="absolute top-0 right-0 p-8 opacity-5"><i data-lucide="fingerprint" class="w-32 h-32"></i></div>
+            <div class="text-center space-y-4">
+                <div class="w-32 h-32 flex items-center justify-center mx-auto animate-float">
+                    <img src="https://lh3.googleusercontent.com/d/15zyF01OHtEgTl8p6bvEkz7xw30ByE2en" alt="Logo Sekolah" class="w-full h-full object-contain drop-shadow-2xl" onerror="this.src='https://ui-avatars.com/api/?name=SMK&background=6366f1&color=fff'">
+                </div>
+                <div class="space-y-1">
+                    <h1 class="text-3xl font-black gradient-text tracking-tighter">E-Presensi Skarida</h1>
+                    <p class="text-slate-400 text-[11px] font-bold tracking-widest uppercase">Absensi Kehadiran Siswa</p>
+                </div>
+            </div>
+            <div class="space-y-6">
+                <div class="relative group">
+                    <i data-lucide="user" class="absolute left-5 top-5 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
+                    <input type="text" id="loginUser" class="w-full pl-14 pr-6 py-5 bg-white/30 border border-white/20 rounded-2xl text-sm font-bold focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none" placeholder="Username / NISN">
+                </div>
+                <div class="relative group">
+                    <i data-lucide="key-round" class="absolute left-5 top-5 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
+                    <input type="password" id="loginPass" class="w-full pl-14 pr-14 py-5 bg-white/30 border border-white/20 rounded-2xl text-sm font-bold focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none" placeholder="Password Keamanan">
+                    <button type="button" onclick="togglePasswordVisibility()" class="absolute right-5 top-5 text-slate-400 hover:text-indigo-500 transition-colors focus:outline-none">
+                        <i id="togglePassIcon" data-lucide="eye" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <button id="btnLogin" onclick="handleLogin()" class="tap-scale w-full py-5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-[2rem] font-black text-sm tracking-[0.2em] shadow-xl shadow-indigo-500/20 uppercase transition-all">Masuk</button>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-60 text-center">Dikembangkan oleh Humas SMKN 2 Tegalsari</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Halaman Presensi -->
+    <div id="presensiPage" class="hidden p-4 md:p-8 animate-in">
+        <div class="max-w-xl mx-auto space-y-6">
+            <div class="flex items-center justify-between glass-card p-4 rounded-[2rem] sticky top-4 z-50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+                        <i data-lucide="user-check" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h1 id="displayNama" class="text-sm font-black text-slate-800 truncate max-w-[150px]">Memuat...</h1>
+                        <p id="displayInfo" class="text-[9px] font-bold text-slate-400 uppercase tracking-tight"></p>
+                    </div>
+                </div>
+                <button onclick="handleLogout()" class="tap-scale w-10 h-10 flex items-center justify-center bg-rose-500/10 text-rose-500 rounded-xl hover:bg-rose-500/20 transition-colors">
+                    <i data-lucide="power" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="glass-card p-8 rounded-[3rem] text-center space-y-2">
+                <p id="realtimeDayDate" class="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">---</p>
+                <h2 id="realtimeClock" class="text-5xl md:text-6xl font-black tracking-tighter gradient-text">00:00:00</h2>
+                <div id="sessionTimeInfo" class="flex justify-center gap-2 mt-2 flex-wrap">
+                    <span id="infoMasuk" class="text-[8px] bg-slate-100 px-2 py-1 rounded-full font-bold text-slate-500">MASUK: --:--</span>
+                    <span id="infoPulang" class="text-[8px] bg-slate-100 px-2 py-1 rounded-full font-bold text-slate-500">PULANG: --:--</span>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <div class="type-selector flex-1">
+                    <input type="radio" id="typeMasuk" name="presensiType" value="MASUK" class="hidden" checked>
+                    <label id="labelMasuk" for="typeMasuk" class="flex flex-col items-center justify-center py-4 rounded-3xl cursor-pointer">
+                        <i data-lucide="log-in" class="w-5 h-5 mb-1"></i>
+                        <span class="text-[10px] font-black uppercase tracking-widest">Masuk</span>
+                    </label>
+                </div>
+                <div class="type-selector flex-1">
+                    <input type="radio" id="typePulang" name="presensiType" value="PULANG" class="hidden">
+                    <label id="labelPulang" for="typePulang" class="flex flex-col items-center justify-center py-4 rounded-3xl cursor-pointer">
+                        <i data-lucide="log-out" class="w-5 h-5 mb-1"></i>
+                        <span class="text-[10px] font-black uppercase tracking-widest">Pulang</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-[3rem] p-6 space-y-6">
+                <div class="flex items-center justify-between px-2">
+                    <div class="flex items-center gap-2">
+                        <span class="relative flex h-3 w-3">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+                        </span>
+                        <h2 class="font-black text-slate-800 text-sm uppercase tracking-wider">Lokasi Presensi</h2>
+                    </div>
+                    <div id="displayRadius" class="bg-indigo-500/10 px-4 py-1.5 rounded-full text-[10px] font-extrabold text-indigo-500 border border-indigo-500/20 uppercase tracking-widest">Radius --M</div>
+                </div>
+
+                <div id="loadingState" class="flex flex-col items-center py-12 space-y-6">
+                    <div class="relative w-20 h-20">
+                        <div class="absolute inset-0 border-4 border-indigo-500/10 rounded-full"></div>
+                        <div class="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+                    </div>
+                    <p class="text-sm font-bold text-slate-400 animate-pulse tracking-widest uppercase italic">Memuat Peta & Lokasi Terbaru...</p>
+                </div>
+
+                <div id="errorState" class="hidden bg-rose-500/5 border border-rose-500/20 p-8 rounded-[2.5rem] text-center space-y-4">
+                    <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+                        <i data-lucide="map-pin-off" class="w-8 h-8"></i>
+                    </div>
+                    <p id="errorMsg" class="text-sm text-rose-600 font-bold leading-relaxed"></p>
+                    <button onclick="startTracking(true)" class="tap-scale px-8 py-3 bg-rose-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest">Coba Lagi</button>
+                </div>
+
+                <div id="mainContent" class="hidden space-y-4">
+                    <div class="relative pb-16">
+                        <div id="map" class="w-full bg-slate-100"></div>
+                        <div class="absolute bottom-0 left-4 right-4 glass-card p-3 rounded-2xl flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span id="statusDot" class="w-3 h-3 rounded-full bg-slate-400"></span>
+                                <span id="mapStatusLabel" class="text-[10px] font-black uppercase tracking-wider text-slate-600">Mencari Lokasi...</span>
+                            </div>
+                            <span id="mapDistanceLabel" class="text-xs font-black text-indigo-600">-- m</span>
+                        </div>
+                    </div>
+
+                    <button id="absenBtn" disabled onclick="handleAbsen()" class="tap-scale w-full py-5 rounded-[2rem] font-black text-sm tracking-[0.3em] transition-all shadow-2xl bg-slate-500/10 text-slate-400 border border-slate-500/10 uppercase">
+                        Konfirmasi Presensi
+                    </button>
+
+                    <div class="relative pt-2">
+                        <p class="text-center text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3">atau jika tidak bisa hadir</p>
+                        <button id="btnAjukanIzin" onclick="openIzinModal()" class="tap-scale w-full py-4 rounded-[1.8rem] font-black text-xs tracking-[0.2em] transition-all bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-xl shadow-amber-500/30 flex items-center justify-center gap-2 uppercase">
+                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                            Ajukan Izin
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4 pb-12">
+                <div class="flex items-center justify-between px-4">
+                    <h3 class="font-black text-slate-800 text-xs uppercase tracking-[0.2em]">Aktivitas Hari Ini</h3>
+                    <span id="logCount" class="text-[10px] font-black text-indigo-500 bg-indigo-500/10 px-3 py-1 rounded-full uppercase">0 Sesi</span>
+                </div>
+                <div id="logContainer" class="space-y-4">
+                    <div id="logEmpty" class="text-center py-10 glass-card rounded-[2.5rem] opacity-40">
+                        <i data-lucide="history" class="w-8 h-8 mx-auto mb-2 text-slate-400"></i>
+                        <p class="text-[10px] font-bold uppercase tracking-widest">Belum ada riwayat</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCC9ehP-MqTDlJ482w5Q7GQSxSo4-Z_dScPmIKKuyP5B7TYQloaR3diAic5ujm4fdc/exec";
+        
+        let currentUser = null;
+        let currentDistance = null;
+        let currentCoords = null;
+        let isSubmitting = false;
+        let isSubmittingIzin = false;
+        let watchId = null;
+        let selectedIzinType = null;
+        let lastRefreshTime = 0;
+        
+        let todayStatus = { masuk: false, pulang: false, izin: false };
+        let uploadedImageBase64 = null;
+        let uploadedFileName = null;
+        let uploadedFileSize = null;
+
+        let map = null;
+        let schoolMarker = null;
+        let userMarker = null;
+        let radiusCircle = null;
+        let isFirstLocationUpdate = true;
+
+        lucide.createIcons();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const textarea = document.getElementById('izinKeterangan');
+            if (textarea) {
+                textarea.addEventListener('input', (e) => {
+                    document.getElementById('charCount').innerText = e.target.value.length;
+                });
+            }
+        });
+
+        window.onload = async () => {
+            const saved = localStorage.getItem('skarida_session');
+            if (saved) {
+                currentUser = JSON.parse(saved);
+                if (!currentUser.username) {
+                    localStorage.removeItem('skarida_session');
+                    showToast("Sistem diperbarui! Silakan login sekali lagi.", "amber");
+                    return;
+                }
+                await silentRefreshUserData();
+                showPresensiPage(true); 
+            }
+        };
+
+        async function silentRefreshUserData() {
+            if (!currentUser || !currentUser.username) return;
+            try {
+                const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=refreshUserData&username=${encodeURIComponent(currentUser.username)}&_t=${Date.now()}`);
+                const result = await res.json();
+                if (result.status === "success" && result.data) {
+                    const newData = result.data;
+                    const changes = [];
+                    if (currentUser.kelas !== newData.kelas) changes.push(`Kelas: ${currentUser.kelas} → ${newData.kelas}`);
+                    if (currentUser.nama !== newData.nama) changes.push(`Nama diperbarui`);
+                    if (currentUser.radius != newData.radius) changes.push(`Radius diperbarui`);
+                    if (changes.length > 0) {
+                        currentUser = newData;
+                        localStorage.setItem('skarida_session', JSON.stringify(currentUser));
+                        setTimeout(() => showToast(`${changes.length} data diperbarui`, "emerald"), 1500);
+                        if (document.getElementById('displayNama')) {
+                            document.getElementById('displayNama').innerText = currentUser.nama;
+                            document.getElementById('displayInfo').innerText = `${currentUser.kelas} • ${currentUser.jurusan}`;
+                            document.getElementById('displayRadius').innerText = `Radius ${currentUser.radius}M`;
+                            document.getElementById('infoMasuk').innerText = `MASUK: ${currentUser.start_time_masuk}-${currentUser.end_time_masuk}`;
+                            document.getElementById('infoPulang').innerText = `PULANG: ${currentUser.start_time_pulang}-${currentUser.end_time_pulang}`;
+                        }
+                    }
+                    lastRefreshTime = Date.now();
+                    localStorage.setItem('skarida_last_refresh', lastRefreshTime.toString());
+                }
+            } catch (e) { console.log("Silent refresh gagal:", e.message); }
+        }
+
+        function togglePasswordVisibility() {
+            const passInput = document.getElementById('loginPass');
+            const icon = document.getElementById('togglePassIcon');
+            if (passInput.type === "password") { passInput.type = "text"; icon.setAttribute('data-lucide', 'eye-off'); }
+            else { passInput.type = "password"; icon.setAttribute('data-lucide', 'eye'); }
+            lucide.createIcons();
+        }
+
+        function updateRealtimeClock() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('realtimeDayDate').innerText = now.toLocaleDateString('id-ID', options);
+            const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\./g, ':');
+            document.getElementById('realtimeClock').innerText = timeStr;
+            if (currentUser) validateSessionTimes(timeStr.substring(0, 5));
+        }
+        setInterval(updateRealtimeClock, 1000);
+
+        function validateSessionTimes(currentTime) {
+            if (!currentUser) return;
+            const labelMasuk = document.getElementById('labelMasuk');
+            const labelPulang = document.getElementById('labelPulang');
+            const isMasukOpen = currentTime >= currentUser.start_time_masuk && currentTime <= currentUser.end_time_masuk;
+            const isPulangOpen = currentTime >= currentUser.start_time_pulang && currentTime <= currentUser.end_time_pulang;
+            if (!isMasukOpen) labelMasuk.classList.add('session-locked'); else labelMasuk.classList.remove('session-locked');
+            if (!isPulangOpen) labelPulang.classList.add('session-locked'); else labelPulang.classList.remove('session-locked');
+        }
+
+        async function handleLogin() {
+            const user = document.getElementById('loginUser').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+            const btn = document.getElementById('btnLogin');
+            if (!user || !pass) return showToast("Mohon isi semua data!", "rose");
+
+            btn.disabled = true;
+            btn.innerHTML = `<span class="animate-pulse">Menghubungkan...</span>`;
+
+            try {
+                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=login&user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`);
+                const result = await response.json();
+                if (result.status === "success") {
+                    currentUser = result.data;
+                    localStorage.setItem('skarida_session', JSON.stringify(currentUser));
+                    localStorage.setItem('skarida_last_refresh', Date.now().toString());
+                    showPresensiPage(true); 
+                    showToast("Selamat Datang!", "emerald");
+                } else {
+                    showToast(result.message || "Gagal Login!", "rose");
+                }
+            } catch (e) {
+                showToast("Kesalahan Jaringan!", "rose");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Masuk";
+            }
+        }
+
+        function initMap() {
+            if (map) { map.remove(); }
+            isFirstLocationUpdate = true;
+            const schoolLat = parseFloat(currentUser.latitude);
+            const schoolLng = parseFloat(currentUser.longitude);
+            const radius = parseFloat(currentUser.radius);
+
+            map = L.map('map', { zoomControl: true, attributionControl: false }).setView([schoolLat, schoolLng], 18);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, minZoom: 2 }).addTo(map);
+
+            const schoolIcon = L.divIcon({ className: 'custom-school-icon', iconSize: [24, 24], iconAnchor: [12, 12] });
+            schoolMarker = L.marker([schoolLat, schoolLng], { icon: schoolIcon }).addTo(map).bindPopup("Lokasi Presensi");
+            radiusCircle = L.circle([schoolLat, schoolLng], { color: '#10b981', fillColor: '#10b981', fillOpacity: 0.1, radius: radius, weight: 2, dashArray: '5, 5' }).addTo(map);
+            const userIcon = L.divIcon({ className: 'custom-user-icon', iconSize: [20, 20], iconAnchor: [10, 10] });
+            userMarker = L.marker([schoolLat, schoolLng], { icon: userIcon }).addTo(map).bindPopup("Lokasi Anda");
+        }
+
+        function showPresensiPage(forceGpsRefresh = false) {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('presensiPage').classList.remove('hidden');
+            
+            document.getElementById('displayNama').innerText = currentUser.nama;
+            document.getElementById('displayInfo').innerText = `${currentUser.kelas} • ${currentUser.jurusan}`;
+            document.getElementById('displayRadius').innerText = `Radius ${currentUser.radius}M`;
+            document.getElementById('infoMasuk').innerText = `MASUK: ${currentUser.start_time_masuk}-${currentUser.end_time_masuk}`;
+            document.getElementById('infoPulang').innerText = `PULANG: ${currentUser.start_time_pulang}-${currentUser.end_time_pulang}`;
+
+            todayStatus = { masuk: false, pulang: false, izin: false };
+            initMap();
+
+            if (forceGpsRefresh) {
+                document.getElementById('mainContent').classList.add('hidden');
+                document.getElementById('loadingState').classList.remove('hidden');
+            }
+
+            startTracking(forceGpsRefresh);
+            fetchUserHistory(currentUser.nama);
+            
+            // 🆕 Panggil notifikasi saat halaman presensi dimuat
+            fetchAndShowNotif();
+        }
+
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; const p = Math.PI / 180;
+            const a = 0.5 - Math.cos((lat2 - lat1) * p) / 2 + Math.cos(lat1 * p) * Math.cos(lat2 * p) * (1 - Math.cos((lon2 - lon1) * p)) / 2;
+            return R * 2 * Math.asin(Math.sqrt(a));
+        }
+
+        function updateUI(position) {
+            const { latitude, longitude, accuracy } = position.coords;
+            currentCoords = { lat: latitude, lng: longitude };
+            currentDistance = getDistance(latitude, longitude, parseFloat(currentUser.latitude), parseFloat(currentUser.longitude));
+            
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            
+            if (map) setTimeout(() => map.invalidateSize(), 100);
+            
+            const dist = Math.round(currentDistance);
+            const isIn = currentDistance <= currentUser.radius;
+            
+            document.getElementById('mapDistanceLabel').textContent = `${dist} m`;
+            const statusDot = document.getElementById('statusDot');
+            const mapStatusLabel = document.getElementById('mapStatusLabel');
+            const btn = document.getElementById('absenBtn');
+
+            if (isIn) {
+                statusDot.className = "w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
+                mapStatusLabel.innerHTML = "Lokasi <span class='text-emerald-600'>VALID</span>";
+                if (!isSubmitting) {
+                    btn.disabled = false;
+                    btn.className = "tap-scale w-full py-5 rounded-[2rem] font-black text-sm tracking-[0.3em] bg-indigo-600 text-white shadow-2xl shadow-indigo-500/20 border-0 uppercase";
+                }
+            } else {
+                statusDot.className = "w-3 h-3 rounded-full bg-rose-500";
+                mapStatusLabel.innerHTML = `Di Luar Radius <span class='text-rose-500'>(Akurasi: ${Math.round(accuracy)}m)</span>`;
+                btn.disabled = true;
+                btn.className = "w-full py-5 rounded-[2rem] font-black text-sm tracking-[0.3em] bg-slate-500/10 text-slate-400 border border-slate-500/10 uppercase cursor-not-allowed";
+            }
+
+            if (map && userMarker) {
+                userMarker.setLatLng([latitude, longitude]);
+                if (isFirstLocationUpdate) {
+                    map.setView([latitude, longitude], 18, { animate: true });
+                    isFirstLocationUpdate = false;
+                } else {
+                    map.panTo([latitude, longitude], { animate: true, duration: 0.5 });
+                }
+            }
+        }
+
+        function startTracking(force = false) {
+            if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+            document.getElementById('errorState').classList.add('hidden');
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('mainContent').classList.add('hidden');
+            
+            if (navigator.geolocation) {
+                watchId = navigator.geolocation.watchPosition(updateUI, (err) => {
+                    document.getElementById('loadingState').classList.add('hidden');
+                    document.getElementById('errorState').classList.remove('hidden');
+                    document.getElementById('errorMsg').innerText = "Gagal memuat GPS. Pastikan Izin Lokasi aktif & GPS Aktif.";
+                }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+            } else {
+                showToast("Browser tidak mendukung GPS", "rose");
+            }
+        }
+
+        function checkTodayStatus() {
+            const labelMasuk = document.getElementById('labelMasuk');
+            const labelPulang = document.getElementById('labelPulang');
+            const btnAjukanIzin = document.getElementById('btnAjukanIzin');
+            const absenBtn = document.getElementById('absenBtn');
+            const typeMasuk = document.getElementById('typeMasuk');
+            const typePulang = document.getElementById('typePulang');
+
+            labelMasuk.classList.remove('session-locked');
+            labelPulang.classList.remove('session-locked');
+            
+            btnAjukanIzin.disabled = false;
+            btnAjukanIzin.classList.remove('opacity-50', 'cursor-not-allowed');
+            btnAjukanIzin.className = "tap-scale w-full py-4 rounded-[1.8rem] font-black text-xs tracking-[0.2em] transition-all bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-xl shadow-amber-500/30 flex items-center justify-center gap-2 uppercase";
+            btnAjukanIzin.innerHTML = `<i data-lucide="file-text" class="w-4 h-4"></i><span>Ajukan Izin</span>`;
+            
+            absenBtn.disabled = false;
+            absenBtn.className = "tap-scale w-full py-5 rounded-[2rem] font-black text-sm tracking-[0.3em] transition-all shadow-2xl bg-indigo-600 text-white shadow-2xl shadow-indigo-500/20 border-0 uppercase";
+            absenBtn.innerHTML = "Konfirmasi Presensi";
+
+            if (todayStatus.masuk) {
+                labelMasuk.classList.add('session-locked');
+                if (typeMasuk.checked) typePulang.checked = true;
+            }
+            if (todayStatus.pulang) {
+                labelPulang.classList.add('session-locked');
+                if (typePulang.checked && !todayStatus.masuk) typeMasuk.checked = true;
+            }
+            if (todayStatus.masuk && todayStatus.pulang) {
+                absenBtn.disabled = true;
+                absenBtn.className = "w-full py-5 rounded-[2rem] font-black text-sm tracking-[0.3em] bg-slate-500/10 text-slate-400 border border-slate-500/10 uppercase cursor-not-allowed";
+                absenBtn.innerHTML = "Sudah Presensi Lengkap Hari Ini";
+            }
+            if (todayStatus.izin) {
+                btnAjukanIzin.disabled = true;
+                btnAjukanIzin.classList.add('opacity-50', 'cursor-not-allowed');
+                btnAjukanIzin.className = "w-full py-4 rounded-[1.8rem] font-black text-xs tracking-[0.2em] bg-slate-500/10 text-slate-400 border border-slate-500/10 uppercase cursor-not-allowed flex items-center justify-center gap-2";
+                btnAjukanIzin.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i><span>Sudah Izin Hari Ini</span>`;
+            }
+            lucide.createIcons();
+        }
+
+        async function handleAbsen() {
+            const now = new Date();
+            const timeNowFull = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\./g, ':');
+            const timeCheck = timeNowFull.substring(0, 5);
+            
+            const typeSelected = document.querySelector('input[name="presensiType"]:checked').value;
+            const start = typeSelected === 'MASUK' ? currentUser.start_time_masuk : currentUser.start_time_pulang;
+            const end = typeSelected === 'MASUK' ? currentUser.end_time_masuk : currentUser.end_time_pulang;
+
+            if (timeCheck < start || timeCheck > end) return showToast(`Sesi ${typeSelected} Tutup (${start}-${end})`, "rose");
+            if (currentDistance > currentUser.radius || isSubmitting) return;
+
+            if (typeSelected === 'MASUK' && todayStatus.masuk) return showToast("Anda sudah melakukan presensi MASUK hari ini!", "amber");
+            if (typeSelected === 'PULANG' && todayStatus.pulang) return showToast("Anda sudah melakukan presensi PULANG hari ini!", "amber");
+
+            isSubmitting = true;
+            const btn = document.getElementById('absenBtn');
+            const originalText = btn.innerHTML;
+            const originalClass = btn.className;
+            btn.disabled = true;
+            btn.innerHTML = `<span class="animate-pulse">Mengirim Data...</span>`;
+
+            const data = {
+                action: "presensi", nama: currentUser.nama, kelas: currentUser.kelas, jurusan: currentUser.jurusan,
+                waktu: timeNowFull, tanggal: now.toLocaleDateString('id-ID'), koordinat: `${currentCoords.lat}, ${currentCoords.lng}`,
+                jarak: Math.round(currentDistance) + "m", tipe: typeSelected
+            };
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+                const result = await response.json();
+                
+                if (result.status === "error") {
+                    showToast(result.message || "Gagal mengirim data!", "rose");
+                    isSubmitting = false;
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    btn.className = originalClass;
+                    return;
+                }
+
+                if (typeSelected === 'MASUK') todayStatus.masuk = true;
+                if (typeSelected === 'PULANG') todayStatus.pulang = true;
+                
+                setTimeout(async () => {
+                    showToast(`Presensi ${typeSelected} Berhasil!`, "emerald");
+                    await fetchUserHistory(currentUser.nama);
+                    isSubmitting = false;
+                    checkTodayStatus();
+                }, 1000);
+            } catch (e) {
+                showToast("Gagal mengirim data!", "rose");
+                isSubmitting = false;
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                btn.className = originalClass;
+            }
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) return showToast("Hanya file gambar yang diizinkan!", "rose");
+            if (file.size > 2 * 1024 * 1024) return showToast("Ukuran file maksimal 2MB!", "rose");
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                uploadedImageBase64 = e.target.result;
+                uploadedFileName = file.name;
+                uploadedFileSize = file.size;
+                
+                document.getElementById('previewImage').src = uploadedImageBase64;
+                document.getElementById('previewImage').classList.remove('hidden');
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
+                document.getElementById('removePhotoBtn').classList.remove('hidden');
+                document.getElementById('uploadOverlay').classList.remove('hidden');
+                document.getElementById('uploadArea').classList.add('has-image');
+                
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('fileSize').textContent = formatFileSize(file.size);
+                document.getElementById('fileInfo').classList.remove('hidden');
+                
+                showToast("Foto berhasil diupload!", "emerald");
+                lucide.createIcons();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeImage(event) {
+            event.stopPropagation();
+            uploadedImageBase64 = null; uploadedFileName = null; uploadedFileSize = null;
+            
+            document.getElementById('previewImage').src = '';
+            document.getElementById('previewImage').classList.add('hidden');
+            document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            document.getElementById('removePhotoBtn').classList.add('hidden');
+            document.getElementById('uploadOverlay').classList.add('hidden');
+            document.getElementById('uploadArea').classList.remove('has-image');
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileInfo').classList.add('hidden');
+            showToast("Foto dihapus", "amber");
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024; const sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function openIzinModal() {
+            if (todayStatus.izin) return showToast("Anda sudah mengajukan izin hari ini!", "amber");
+            if (!currentCoords) return showToast("Lokasi belum tersedia, tunggu GPS aktif", "rose");
+            
+            document.getElementById('izinKeterangan').value = '';
+            document.getElementById('charCount').innerText = '0';
+            selectedIzinType = null;
+            document.querySelectorAll('.izin-type-chip').forEach(c => c.classList.remove('active'));
+            
+            uploadedImageBase64 = null; uploadedFileName = null; uploadedFileSize = null;
+            document.getElementById('previewImage').classList.add('hidden');
+            document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            document.getElementById('removePhotoBtn').classList.add('hidden');
+            document.getElementById('uploadOverlay').classList.add('hidden');
+            document.getElementById('uploadArea').classList.remove('has-image');
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileInfo').classList.add('hidden');
+            
+            document.getElementById('izinUserNama').innerText = currentUser.nama;
+            document.getElementById('izinUserInfo').innerText = `${currentUser.kelas} • ${currentUser.jurusan}`;
+            document.getElementById('izinModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            lucide.createIcons();
+        }
+
+        function closeIzinModal() {
+            document.getElementById('izinModal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function selectIzinType(type) {
+            selectedIzinType = type;
+            document.querySelectorAll('.izin-type-chip').forEach(chip => chip.classList.remove('active'));
+            const activeChip = document.querySelector(`.izin-type-chip[data-type="${type}"]`);
+            if (activeChip) activeChip.classList.add('active');
+            showToast(`Jenis izin: ${type}`, "amber");
+        }
+
+        async function handleIzin() {
+            if (isSubmittingIzin) return;
+            if (todayStatus.izin) return showToast("Anda sudah mengajukan izin hari ini!", "amber");
+            
+            const keterangan = document.getElementById('izinKeterangan').value.trim();
+            const btn = document.getElementById('btnKirimIzin');
+            
+            if (!selectedIzinType) return showToast("Pilih jenis izin terlebih dahulu!", "rose");
+            if (keterangan.length < 10) return showToast("Keterangan minimal 10 karakter!", "rose");
+            if (!currentCoords) return showToast("Lokasi GPS belum tersedia!", "rose");
+            if (!confirm(`Yakin ingin mengirim izin "${selectedIzinType}"?\n\nKeterangan: ${keterangan}`)) return;
+
+            isSubmittingIzin = true;
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span class="animate-pulse">Mengirim...</span>`;
+
+            const now = new Date();
+            const timeNowFull = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\./g, ':');
+
+            const data = {
+                action: "izin", nama: currentUser.nama, kelas: currentUser.kelas, jurusan: currentUser.jurusan,
+                waktu: timeNowFull, tanggal: now.toLocaleDateString('id-ID'), koordinat: `${currentCoords.lat}, ${currentCoords.lng}`,
+                jenis_izin: selectedIzinType, keterangan: keterangan,
+                foto: uploadedImageBase64 || null, foto_nama: uploadedFileName || null, foto_ukuran: uploadedFileSize || null
+            };
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) });
+                const result = await response.json();
+                
+                if (result.status === "error") {
+                    showToast(result.message || "Gagal mengirim izin!", "rose");
+                    isSubmittingIzin = false;
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                    return;
+                }
+
+                todayStatus.izin = true;
+                showToast(`Izin ${selectedIzinType} terkirim!`, "emerald");
+                closeIzinModal();
+                setTimeout(async () => {
+                    isSubmittingIzin = false;
+                    btn.disabled = false; 
+                    btn.innerHTML = originalHTML;
+                    await fetchUserHistory(currentUser.nama);
+                    checkTodayStatus();
+                }, 2000);
+            } catch (e) {
+                console.error("Error kirim izin:", e);
+                showToast("Gagal mengirim izin! Cek koneksi internet.", "rose");
+                isSubmittingIzin = false;
+                btn.disabled = false; 
+                btn.innerHTML = originalHTML;
+            }
+        }
+
+        async function fetchUserHistory(nama) {
+            const container = document.getElementById('logContainer');
+            const logCountLabel = document.getElementById('logCount');
+            const now = new Date();
+            const today = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+            
+            try {
+                const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getHistory&nama=${encodeURIComponent(nama)}&tanggal=${encodeURIComponent(today)}&_t=${Date.now()}`);
+                const result = await res.json();
+                if (result.status === "success") {
+                    container.innerHTML = "";
+                    if (result.data && result.data.length > 0) {
+                        const sorted = [...result.data].reverse();
+                        sorted.forEach(item => addLogToUI(item, false));
+                        logCountLabel.innerText = `${result.data.length} SESI`;
+                        
+                        todayStatus.masuk = sorted.some(item => item.tipe === 'MASUK');
+                        todayStatus.pulang = sorted.some(item => item.tipe === 'PULANG');
+                        todayStatus.izin = sorted.some(item => item.tipe === 'IZIN');
+                        checkTodayStatus();
+                    } else {
+                        container.innerHTML = `<div id="logEmpty" class="text-center py-10 glass-card rounded-[2.5rem] opacity-40"><i data-lucide="history" class="w-8 h-8 mx-auto mb-2 text-slate-400"></i><p class="text-[10px] font-bold uppercase tracking-widest">Belum ada riwayat hari ini</p></div>`;
+                        logCountLabel.innerText = "0 SESI";
+                        todayStatus = { masuk: false, pulang: false, izin: false };
+                        checkTodayStatus();
+                    }
+                }
+            } catch (e) { console.error("Gagal memuat riwayat:", e); } finally { lucide.createIcons(); }
+        }
+
+        function addLogToUI(log, prepend = true) {
+            const container = document.getElementById('logContainer');
+            const emptyState = document.getElementById('logEmpty');
+            if (emptyState) emptyState.remove();
+            
+            const div = document.createElement('div');
+            const isIzin = log.tipe === 'IZIN' || log.jenis_izin;
+            const isPulang = log.tipe === 'PULANG';
+            
+            let colorClass, iconBg, iconName, title, subtitle, badgeText, badgeColor;
+            
+            if (isIzin) {
+                colorClass = 'bg-amber-500'; iconBg = 'bg-amber-500/10 text-amber-600'; iconName = 'file-text';
+                title = `Izin ${log.jenis_izin || ''}`; subtitle = `${log.waktu} • ${log.keterangan || 'Tanpa keterangan'}`;
+                badgeText = log.jenis_izin || 'Izin'; badgeColor = 'text-amber-600 bg-amber-50';
+            } else if (isPulang) {
+                colorClass = 'bg-rose-500'; iconBg = 'bg-rose-500/10 text-rose-600'; iconName = 'log-out';
+                title = `Presensi PULANG`; subtitle = log.waktu; badgeText = log.jarak || 'Valid'; badgeColor = 'text-rose-600 bg-rose-50';
+            } else {
+                colorClass = 'bg-emerald-500'; iconBg = 'bg-emerald-500/10 text-emerald-600'; iconName = 'check-circle';
+                title = `Presensi MASUK`; subtitle = log.waktu; badgeText = log.jarak || 'Valid'; badgeColor = 'text-emerald-600 bg-emerald-50';
+            }
+
+            div.className = "glass-card p-5 rounded-[2rem] flex items-center justify-between animate-in relative overflow-hidden";
+            div.innerHTML = `
+                <div class="absolute left-0 top-0 w-1.5 h-full ${colorClass}"></div>
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 ${iconBg} rounded-xl flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="${iconName}" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs font-black text-slate-700 leading-none mb-1">${title}</p>
+                        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider truncate max-w-[200px]">${subtitle}</p>
+                    </div>
+                </div>
+                <div class="text-[9px] font-black ${badgeColor} px-3 py-1.5 rounded-full uppercase flex-shrink-0 ml-2">${badgeText}</div>`;
+            
+            if (prepend) container.prepend(div); else container.appendChild(div);
+            lucide.createIcons();
+        }
+
+        function handleLogout() {
+            if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+            if (map) { map.remove(); map = null; } 
+            
+            localStorage.removeItem('skarida_session');
+            localStorage.removeItem('skarida_last_refresh');
+            currentUser = null;
+            isSubmittingIzin = false;
+            todayStatus = { masuk: false, pulang: false, izin: false };
+            
+            document.getElementById('presensiPage').classList.add('hidden');
+            document.getElementById('loginPage').classList.remove('hidden');
+            document.getElementById('logContainer').innerHTML = `<div id="logEmpty" class="text-center py-10 glass-card rounded-[2.5rem] opacity-40"><i data-lucide="history" class="w-8 h-8 mx-auto mb-2 text-slate-400"></i><p class="text-[10px] font-bold uppercase tracking-widest">Belum ada riwayat</p></div>`;
+            document.getElementById('logCount').innerText = "0 SESI";
+            showToast("Berhasil Logout", "emerald");
+            lucide.createIcons();
+        }
+
+        function showToast(message, color) {
+            const toast = document.getElementById('statusToast');
+            const content = document.getElementById('toastContent');
+            const icon = document.getElementById('toastIcon');
+            document.getElementById('toastMessage').textContent = message;
+            
+            if (color === 'emerald') {
+                content.className = "aero-blur bg-white/95 border border-emerald-500/20 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3 text-emerald-600";
+                icon.setAttribute('data-lucide', 'check-circle');
+            } else if (color === 'amber') {
+                content.className = "aero-blur bg-white/95 border border-amber-500/20 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3 text-amber-600";
+                icon.setAttribute('data-lucide', 'alert-triangle');
+            } else {
+                content.className = "aero-blur bg-white/95 border border-rose-500/20 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3 text-rose-600";
+                icon.setAttribute('data-lucide', 'alert-circle');
+            }
+            lucide.createIcons();
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        // 🆕 FUNGSI NOTIFIKASI POPUP
+        async function fetchAndShowNotif() {
+            try {
+                const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getNotif&_t=${Date.now()}`);
+                const result = await res.json();
+                
+                if (result.status === "success" && result.data) {
+                    const popup = document.getElementById('notifPopup');
+                    const textEl = document.getElementById('notifText');
+                    
+                    if (result.data.status.toLowerCase() === 'aktif' && result.data.pesan) {
+                        textEl.innerText = result.data.pesan;
+                        popup.classList.remove('hidden');
+                        lucide.createIcons();
+                    } else {
+                        popup.classList.add('hidden');
+                    }
+                }
+            } catch (e) {
+                console.error("Gagal memuat notifikasi:", e);
+            }
+        }
+
+        function closeNotif() {
+            const popup = document.getElementById('notifPopup');
+            popup.style.opacity = '0';
+            popup.style.transform = 'translate(-50%, -20px)';
+            popup.style.transition = 'all 0.3s ease';
+            
+            setTimeout(() => {
+                popup.classList.add('hidden');
+                popup.style.opacity = '';
+                popup.style.transform = '';
+                popup.style.transition = '';
+            }, 300);
+        }
+
+        document.getElementById('izinModal').addEventListener('click', (e) => {
+            if (e.target.id === 'izinModal') closeIzinModal();
+        });
+
+        setInterval(async () => {
+            if (currentUser && !document.hidden && currentUser.username) {
+                const lastRefresh = parseInt(localStorage.getItem('skarida_last_refresh') || '0');
+                if (Date.now() - lastRefresh > 30 * 60 * 1000) {
+                    await silentRefreshUserData();
+                    await fetchUserHistory(currentUser.nama);
+                    await fetchAndShowNotif(); // 🆕 Refresh notifikasi juga
+                }
+            }
+        }, 5 * 60 * 1000);
+    </script>
+</body>
+</html>
