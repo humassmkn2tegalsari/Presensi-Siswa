@@ -140,7 +140,7 @@
 </head>
 <body class="min-h-screen">
 
-<!--  NOTIFIKASI POPUP (EFEK MELUNCUR HALUS & POSISI CENTER) -->
+<!-- NOTIFIKASI POPUP -->
 <div id="notifPopup" class="hidden fixed top-[100px] left-1/2 z-[150] w-11/12 max-w-md" style="transform: translate(-50%, -30px); opacity: 0; transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);">
     <div class="glass-card bg-amber-50/90 border border-amber-200 rounded-2xl shadow-2xl p-5 relative">
         <button onclick="closeNotif()" class="absolute top-3 right-3 text-amber-600 hover:text-amber-800 hover:bg-amber-100 rounded-full p-1 transition-all">
@@ -161,8 +161,9 @@
     <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[100px] -z-10 animate-pulse"></div>
     <div class="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-pink-500/10 rounded-full blur-[100px] -z-10"></div>
 
-    <div id="statusToast" class="hidden fixed top-6 inset-x-4 z-[100] flex justify-center transform transition-all duration-300">
-        <div id="toastContent" class="aero-blur bg-white/80 border border-white/40 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3">
+    <!-- 🆕 TOAST DENGAN Z-INDEX 300 (DI ATAS MODAL) -->
+    <div id="statusToast" class="hidden fixed top-6 inset-x-4 z-[300] flex justify-center transform transition-all duration-300 pointer-events-none">
+        <div id="toastContent" class="aero-blur bg-white/95 border px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3 pointer-events-auto">
             <i id="toastIcon" data-lucide="info" class="w-5 h-5"></i>
             <span id="toastMessage" class="font-bold text-sm tracking-tight text-slate-700">Pesan</span>
         </div>
@@ -570,8 +571,6 @@
 
             startTracking(forceGpsRefresh);
             fetchUserHistory(currentUser.nama);
-            
-            // 🆕 Panggil notifikasi saat halaman presensi dimuat
             fetchAndShowNotif();
         }
 
@@ -1000,51 +999,39 @@
             setTimeout(() => toast.classList.add('hidden'), 3000);
         }
 
-// 🆕 FUNGSI NOTIFIKASI POPUP (DENGAN EFEK MELUNCUR)
-async function fetchAndShowNotif() {
-    try {
-        const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getNotif&_t=${Date.now()}`);
-        const result = await res.json();
-        
-        if (result.status === "success" && result.data) {
-            const popup = document.getElementById('notifPopup');
-            const textEl = document.getElementById('notifText');
-            
-            if (result.data.status.toLowerCase() === 'aktif' && result.data.pesan) {
-                textEl.innerText = result.data.pesan;
+        async function fetchAndShowNotif() {
+            try {
+                const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getNotif&_t=${Date.now()}`);
+                const result = await res.json();
                 
-                // 1. Tampilkan elemen dulu (masih opacity 0 dan posisi di atas)
-                popup.classList.remove('hidden');
-                
-                // 2. Paksa browser merender ulang (reflow) agar transisi berjalan
-                void popup.offsetWidth; 
-                
-                // 3. Jalankan efek meluncur ke posisi akhir (tengah & opacity penuh)
-                popup.style.opacity = '1';
-                popup.style.transform = 'translate(-50%, 0)';
-                
-                lucide.createIcons();
-            } else {
-                popup.classList.add('hidden');
+                if (result.status === "success" && result.data) {
+                    const popup = document.getElementById('notifPopup');
+                    const textEl = document.getElementById('notifText');
+                    
+                    if (result.data.status.toLowerCase() === 'aktif' && result.data.pesan) {
+                        textEl.innerText = result.data.pesan;
+                        popup.classList.remove('hidden');
+                        void popup.offsetWidth; 
+                        popup.style.opacity = '1';
+                        popup.style.transform = 'translate(-50%, 0)';
+                        lucide.createIcons();
+                    } else {
+                        popup.classList.add('hidden');
+                    }
+                }
+            } catch (e) {
+                console.error("Gagal memuat notifikasi:", e);
             }
         }
-    } catch (e) {
-        console.error("Gagal memuat notifikasi:", e);
-    }
-}
 
-function closeNotif() {
-    const popup = document.getElementById('notifPopup');
-    
-    // 1. Kembalikan ke posisi atas dan opacity 0 (efek meluncur keluar)
-    popup.style.opacity = '0';
-    popup.style.transform = 'translate(-50%, -30px)';
-    
-    // 2. Sembunyikan elemen setelah animasi selesai (0.5 detik)
-    setTimeout(() => {
-        popup.classList.add('hidden');
-    }, 500);
-}
+        function closeNotif() {
+            const popup = document.getElementById('notifPopup');
+            popup.style.opacity = '0';
+            popup.style.transform = 'translate(-50%, -30px)';
+            setTimeout(() => {
+                popup.classList.add('hidden');
+            }, 500);
+        }
 
         document.getElementById('izinModal').addEventListener('click', (e) => {
             if (e.target.id === 'izinModal') closeIzinModal();
@@ -1056,7 +1043,7 @@ function closeNotif() {
                 if (Date.now() - lastRefresh > 30 * 60 * 1000) {
                     await silentRefreshUserData();
                     await fetchUserHistory(currentUser.nama);
-                    await fetchAndShowNotif(); // 🆕 Refresh notifikasi juga
+                    await fetchAndShowNotif();
                 }
             }
         }, 5 * 60 * 1000);
