@@ -704,7 +704,7 @@
             const originalText = btn.innerHTML;
             const originalClass = btn.className;
             btn.disabled = true;
-            btn.innerHTML = `<span class="animate-pulse">Mengirim Data...</span>`;
+            btn.innerHTML = `<span class="animate-pulse">Mengirim...</span>`;
 
             const data = {
                 action: "presensi", nama: currentUser.nama, kelas: currentUser.kelas, jurusan: currentUser.jurusan,
@@ -766,7 +766,7 @@
                 document.getElementById('fileSize').textContent = formatFileSize(file.size);
                 document.getElementById('fileInfo').classList.remove('hidden');
                 
-                showToast("Foto berhasil diupload!", "emerald");
+                showToast("Foto berhasil diunggah!", "emerald");
                 lucide.createIcons();
             };
             reader.readAsDataURL(file);
