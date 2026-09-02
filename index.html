@@ -223,7 +223,7 @@
                         <div id="uploadPlaceholder" class="upload-placeholder">
                             <i data-lucide="upload-cloud" class="w-12 h-12 mx-auto mb-2"></i>
                             <p class="text-xs font-black text-slate-600">Klik untuk upload foto</p>
-                            <p class="text-[9px] mt-1 font-bold text-slate-400">JPG, PNG (Maks. 2MB)</p>
+                            <p class="text-[9px] mt-1 font-bold text-slate-400">JPG, PNG (Maks. 3MB)</p>
                         </div>
                         <img id="previewImage" class="hidden" alt="Preview">
                         <div id="uploadOverlay" class="upload-overlay hidden"><span>Ganti Foto</span></div>
@@ -747,7 +747,7 @@
             const file = event.target.files[0];
             if (!file) return;
             if (!file.type.startsWith('image/')) return showToast("Hanya file gambar yang diizinkan!", "rose");
-            if (file.size > 2 * 1024 * 1024) return showToast("Ukuran file maksimal 2MB!", "rose");
+            if (file.size > 3 * 1024 * 1024) return showToast("Ukuran file maksimal 3MB!", "rose");
 
             const reader = new FileReader();
             reader.onload = function(e) {
